@@ -1,17 +1,20 @@
 #include <stdio.h>
 #include<string.h>
+#include <stdlib.h>
 
 void mode_select(char *arguments[], int* t_flag, int* mode, int argc, int* str_index );
 void a_mode(char *string, int t_flag);
 void b_mode(char *string, int t_flag);
 void c_mode(char *string, int t_flag);
 
+int b_is_valid_string(char *str,char* newstr);
 
 int main(int argc, char *argv[])  // argc 何個arg があるか　argv 内容string
 {
   int t_flag = 0; // 0 = flase;
   int mode = 5; // 0 = a, 1 = b, 2 = c, 3 = exeption, default = 5;
   int str_index = 1 ; // need to change later;
+
 
   // printf("%s\n", argv[0]);
   // printf("%s\n", argv[1]);
@@ -203,17 +206,142 @@ void a_mode(char *string, int t_flag)
 
 }
 
-void b_mode(char *string, int t_flag)
-{
-  int i;
 
-  for(i=0; i<(unsigned)strlen(string);i++)
+int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise returns 0
+{
+  int is_valid = 1;
+
+  int h_total = 0;
+  int colon_toal= 0;
+  int num_total = 0;
+  int z_total =0 ; // has to be 4 or 5
+  int equal_total =0;
+
+  int num_of_upper = 0;// %2 == 1
+  int odd_num = -1;
+
+  int h_done = 0;
+  int colon_done = 0;
+  int num_done = 0;
+  int z_done = 0;
+  int equal_done = 0;
+
+  int insert_num = 0;
+
+  int i;
+  for(i=0; i < strlen(str); i++)
   {
 
+    // if(is_valid == 0)
+    //   return is_valid;
+
+    // printf("%c\n",str[i] );
+
+    if(h_done == 0) // h and : check
+    {
+      if(str[i] == 'h')
+        h_total++;
+      else if(h_total > -1 && h_total < 2 && str[i] == ':')
+      {
+        h_done++;
+        colon_done++;
+        colon_toal++;
+      }
+      else
+        return 0;
+    }
+
+    else if(num_done == 0) // num check_
+    {
+      if(str[i] > 47 && str[i] < 58)
+      {
+        num_total++;
+        if(num_total == 2)
+          odd_num = (int) (str[i] - '0');
+      }
+
+      else if(num_total > 0 && num_total < 4 && str[i] == 'z')
+      {
+        num_done++;
+        z_total++;
+      }
+      else
+        return 0;
+    }
+
+    else if(z_done == 0 ) // z and = check
+    {
+      if(str[i] == 'z')
+        z_total++;
+      else if (z_total > 3 && z_total < 6 && str[i] == '=')
+      {
+        z_done++;
+        equal_done++;
+        equal_total++;
+      }
+      else
+        return 0;
+    }
+
+    if(equal_done == 1||equal_done == 2)
+    {
+      if(equal_done == 1)
+        equal_done++;
+
+      // check after = , has to be number or upper case letter
+      else if(str[i] > 64 && str[i] < 91) // check upper
+      {
+
+        num_of_upper++;
+      }
+      else if(!((str[i] > 47 && str[i] < 58) || str[i] == odd_num)) // check number
+      {
+        // printf("asdf%d\n",odd_num );
+        return 0;
+      }
+    }
 
 
+    //create new string
+    insert_num = i %8;
+    newstr[i*2] = str[i];
+    newstr[i*2+1] = insert_num+'0';
+
+
+  } // end of for loop
+
+  //check upper case number
+  if(num_of_upper %2 != 1)
+  {
+    return 0;
 
   }
+
+
+
+  return is_valid;
+
+}
+
+void b_mode(char *string, int t_flag)
+{
+  char * newstr = (char*)malloc(strlen(string)*3);
+  if(t_flag == 0)
+  {
+    if(b_is_valid_string(string, newstr) ==1)
+      printf("yes\n");
+    else
+      printf("no\n" );
+  }
+  else
+  {
+
+    if(b_is_valid_string(string, newstr) == 1)
+      printf("%s\n",newstr);
+  }
+
+  free(newstr);
+
 }
 
 void c_mode(char *string, int t_flag)
