@@ -104,12 +104,14 @@ void a_mode(char *string, int t_flag)
   int string_valid =1;
 
 
-
+  int m_total = 0 ;
+  // int __total = 0;
+  int x_total = 0;
+  // int equal_total = 0;
+  int num_total = 0;
 
   // printf("%s\n",string );
   // printf("%u\n", (unsigned)strlen(string));
-
-
 
   int i;
   for(i=0; i<(unsigned)strlen(string);i++)
@@ -119,7 +121,7 @@ void a_mode(char *string, int t_flag)
     if(string_valid == 0)
       break; // terminate
 
-    if(m_valid == 1)
+    if(m_valid == 1) // m check
     {
       if(string[i] == '_')
       {
@@ -129,9 +131,12 @@ void a_mode(char *string, int t_flag)
 
       else if(string[i] != 'm')
         string_valid = 0;
+
+      else
+        m_total++;
     }
 
-    else if(__valid == 2 && m_valid == 2)
+    else if(__valid == 2 && m_valid == 2) // _ check
     {
       // if(string[i] == 'x')
       //   __valid = 2;
@@ -148,6 +153,9 @@ void a_mode(char *string, int t_flag)
       }
       else if(string[i] != 'x')
         string_valid =0;
+
+      else
+        x_total++;
     }
 
     else if(equal_valid == 1 && x_valid == 2) //一回しかこない
@@ -168,17 +176,21 @@ void a_mode(char *string, int t_flag)
       if(!(string[i] > 47 && string[i] < 58))
         string_valid =0;
       else if(string[i] > 47 && string[i] < 57)
+      {
         string[i] += 1;
+        num_total++;
+      }
+
+      else if(string[i] == 59)
+        num_total++;
     }
-
-
     // printf("%c\n",string[5]);
   } // end of for loop
 
 
   if(t_flag == 0)
   {
-    if(string_valid == 1)
+    if(string_valid == 1 && m_total>0 && x_total > 0 && num_total < 0 && num_total < 4)
       printf("yes\n");
     else
       printf("no\n" );
@@ -193,7 +205,15 @@ void a_mode(char *string, int t_flag)
 
 void b_mode(char *string, int t_flag)
 {
+  int i;
 
+  for(i=0; i<(unsigned)strlen(string);i++)
+  {
+
+
+
+
+  }
 }
 
 void c_mode(char *string, int t_flag)
