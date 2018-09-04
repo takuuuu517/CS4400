@@ -8,6 +8,10 @@ void b_mode(char *string, int t_flag);
 void c_mode(char *string, int t_flag);
 
 int b_is_valid_string(char *str,char* newstr);
+int c_is_valid_string(char *str, char* newstr);
+
+
+void remove_char(char *str, char remove_c);
 
 int main(int argc, char *argv[])  // argc 何個arg があるか　argv 内容string
 {
@@ -206,6 +210,53 @@ void a_mode(char *string, int t_flag)
 
 }
 
+void b_mode(char *string, int t_flag)
+{
+  char * newstr = (char*)malloc(strlen(string)*3);
+  if(t_flag == 0)
+  {
+    if(b_is_valid_string(string, newstr) ==1)
+      printf("yes\n");
+    else
+      printf("no\n" );
+  }
+  else
+  {
+
+    if(b_is_valid_string(string, newstr) == 1)
+      printf("%s\n",newstr);
+  }
+
+  free(newstr);
+}
+
+
+
+void c_mode(char *string, int t_flag)
+{
+  char* newstr = malloc(strlen(string)+1);
+  strcpy(newstr, string);
+  if(t_flag == 0)
+  {
+    if(c_is_valid_string(string, newstr) ==1)
+      printf("yes\n");
+    else
+      printf("no\n" );
+  }
+  else
+  {
+    if(c_is_valid_string(string, newstr) == 1)
+    {
+      printf("%s\n",newstr);
+    }
+  }
+
+  free(newstr);
+
+
+
+}
+
 
 int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise returns 0
 {
@@ -300,51 +351,182 @@ int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
         return 0;
       }
     }
-
-
     //create new string
     insert_num = i %8;
     newstr[i*2] = str[i];
     newstr[i*2+1] = insert_num+'0';
-
-
   } // end of for loop
 
   //check upper case number
   if(num_of_upper %2 != 1)
-  {
     return 0;
+  return is_valid;
 
-  }
+}
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+int c_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise returns 0
+{
+  int is_valid = 1;
+
+  int h_total = 0;
+  int __total = 0;
+  int num_total = 0;
+  int q_total =0 ; // has to be odd
+  int equal_total =0;
+
+  int num_of_upper = 0;// %2 == 1
+  char even_num[2] = {' ',' '}; //
+
+  int h_done = 0;
+  int __done = 0;
+  int num_done = 0;
+  int q_done = 0;
+  int equal_done = 0;
+  int even_done = 0 ;
+
+  int upper_done=0;
+
+
+  int i;
+  for(i=0; i < strlen(str); i++)
+  {
+
+
+
+    // if(is_valid == 0)
+    //   return is_valid;
+
+    // printf("%c\n",str[i] );
+
+    if(h_done == 0) // h and : check
+    {
+      if(str[i] == 'h')
+        h_total++;
+      else if(h_total > -1  && str[i] == '_')
+      {
+        h_done++;
+        __done++;
+        __total++;
+      }
+      else
+        return 0;
+    }
+
+    else if(num_done == 0) // num check_
+    {
+
+      if(str[i] > 47 && str[i] < 58)
+      {
+        num_total++;
+        if(num_total == 1)
+          even_num[0] = str[i];
+        else if(num_total == 3)
+          even_num[1] = str[i];
+      }
+
+      else if(num_total > 0 && num_total < 4 && str[i] == 'q')
+      {
+        num_done++;
+        q_total++;
+      }
+      else
+        return 0;
+    }
+
+    else if(q_done == 0 ) // z and = check
+    {
+
+      if(str[i] == 'q')
+        q_total++;
+      else if (q_total %2 == 1  && str[i] == '=')
+      {
+        q_done++;
+        equal_total++;
+      }
+      else
+      {
+        return 0;
+      }
+
+    }
+
+    else if(equal_done == 0)
+    {
+      if(str[i] == '=')
+        equal_total++;
+      // check after = , has to be number or upper case letter
+      else if(equal_total == 2 && str[i] > 64 && str[i] < 91) // check upper
+      {
+        equal_done++;
+        num_of_upper++;
+      }
+      else
+        return 0;
+    }
+
+    else if(upper_done == 0)
+    {
+        if(str[i] > 64 && str[i] < 91)
+          num_of_upper++;
+
+        else if(num_of_upper % 2 == 1 && str[i]==even_num[0])
+        {
+          upper_done++;
+        }
+        else
+          return 0;
+    }
+
+    else if(even_done == 0)
+    {
+      if(num_total == 3)
+      {
+        if(str[i] != even_num[1])
+          return 0;
+      }
+      else
+        return 0;
+    }
+
+  } // end of for loop
+
+  remove_char(newstr, 'C');
 
   return is_valid;
 
 }
 
-void b_mode(char *string, int t_flag)
+void remove_char(char *str, char remove_c)
 {
-  char * newstr = (char*)malloc(strlen(string)*3);
-  if(t_flag == 0)
-  {
-    if(b_is_valid_string(string, newstr) ==1)
-      printf("yes\n");
-    else
-      printf("no\n" );
-  }
-  else
-  {
+    int index_1 = 0;
+    int index_2 = 0;
 
-    if(b_is_valid_string(string, newstr) == 1)
-      printf("%s\n",newstr);
-  }
+    while (str[index_2])
+    {
+        if (str[index_2]!=remove_c)
+            str[index_1++] = str[index_2];
 
-  free(newstr);
+        index_2++;
+    }
 
-}
-
-void c_mode(char *string, int t_flag)
-{
-
+    str[index_1]=0;
 }
