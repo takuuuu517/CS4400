@@ -20,18 +20,8 @@ int main(int argc, char *argv[])  // argc 何個arg があるか　argv 内容st
   int str_index = 1 ; // need to change later;
 
 
-  // printf("%s\n", argv[0]);
-  // printf("%s\n", argv[1]);
-  // printf("%s\n", argv[2]);
 
-  // printf("argc: %d\n", argc);
   mode_select(argv, &t_flag, &mode, argc , &str_index);
-  // printf("mode: %c\n",mode+97);
-  // printf("t flag: %d\n", t_flag);
-  //
-  // printf("starting index: %d\n", str_index);
-  // printf("first string: %s\n", argv[str_index]);
-  // printf("last string: %s\n\n\n\n", argv[argc-1]);
 
   while(str_index < argc)
   {
@@ -62,16 +52,11 @@ void mode_select(char *arguments[], int* t_flag, int* mode, int argc, int* str_i
 {
   int i =1;
 
-  // example of labmda          string x = 1 == 1 ? "yes it does" : "no it doesn't";
   int max = argc > 2 ? 3 : 2;
-
-  // printf("max: %d\n",max );
-
 
   for (i = 1; i < max; i++)
   {
 
-    // printf("%d\n", strcmp(arguments[i], "-t"));
     if(strcmp(arguments[i], "-t") == 0 )
     {
       *str_index += 1;
@@ -108,24 +93,15 @@ void a_mode(char *string, int t_flag)
   int equal_valid = 1; // default is true;
   int number_valid =1; // default is true;
 
-  int equal_done=0;
-
   int string_valid =1;
 
-
   int m_total = 0 ;
-  // int __total = 0;
   int x_total = 0;
-  // int equal_total = 0;
   int num_total = 0;
-
-  // printf("%s\n",string );
-  // printf("%u\n", (unsigned)strlen(string));
 
   int i;
   for(i=0; i<(unsigned)strlen(string);i++)
   {
-    // printf("%c\n", string[i]);
 
     if(string_valid == 0)
       break; // terminate
@@ -150,9 +126,7 @@ void a_mode(char *string, int t_flag)
 
     else if(__valid == 2 && m_valid == 2 && x_valid == 0 ) // _ check
     {
-      // if(string[i] == 'x')
-      //   __valid = 2;
-      // else
+
       if(string[i] != 'x')
         string_valid =0;
       else
@@ -186,11 +160,6 @@ void a_mode(char *string, int t_flag)
         string_valid =0;
       }
 
-
-      // if(string[i] > 47 && string[i] < 58)
-      //   equal_valid = 2;
-      // else if(string[i] != '=')
-      //   string_valid =0;
     }
 
     else if(number_valid == 1 && equal_valid == 2)
@@ -207,7 +176,6 @@ void a_mode(char *string, int t_flag)
       else if(string[i] == 59)
         num_total++;
     }
-    // printf("%c\n",string[5]);
   } // end of for loop
 
 
@@ -300,11 +268,6 @@ int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
   for(i=0; i < strlen(str); i++)
   {
 
-    // if(is_valid == 0)
-    //   return is_valid;
-
-    // printf("%c\n",str[i] );
-
     if(h_done == 0) // h and : check
     {
       if(str[i] == 'h')
@@ -364,7 +327,6 @@ int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
       }
       else if(!((str[i] > 47 && str[i] < 58) || str[i] == odd_num)) // check number
       {
-        // printf("asdf%d\n",odd_num );
         return 0;
       }
     }
@@ -380,25 +342,6 @@ int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
   return is_valid;
 
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 int c_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise returns 0
 {
@@ -426,14 +369,6 @@ int c_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
   int i;
   for(i=0; i < strlen(str); i++)
   {
-
-
-
-    // if(is_valid == 0)
-    //   return is_valid;
-
-    // printf("%c\n",str[i] );
-
     if(h_done == 0) // h and : check
     {
       if(str[i] == 'h')
