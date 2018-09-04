@@ -104,9 +104,11 @@ void a_mode(char *string, int t_flag)
 {
   int m_valid = 1; // default is true;
   int __valid = 1; // default is true;
-  int x_valid = 1; // default is true;
+  int x_valid = 0; // default is true;
   int equal_valid = 1; // default is true;
   int number_valid =1; // default is true;
+
+  int equal_done=0;
 
   int string_valid =1;
 
@@ -137,23 +139,32 @@ void a_mode(char *string, int t_flag)
       }
 
       else if(string[i] != 'm')
+      {
         string_valid = 0;
+      }
+
 
       else
         m_total++;
     }
 
-    else if(__valid == 2 && m_valid == 2) // _ check
+    else if(__valid == 2 && m_valid == 2 && x_valid == 0 ) // _ check
     {
       // if(string[i] == 'x')
       //   __valid = 2;
       // else
       if(string[i] != 'x')
         string_valid =0;
+      else
+      {
+        x_valid++;
+        x_total++;
+      }
     }
 
     else if(x_valid == 1 && __valid == 2)
     {
+
       if(string[i] == '=')
       {
         x_valid = 2;
@@ -167,10 +178,14 @@ void a_mode(char *string, int t_flag)
 
     else if(equal_valid == 1 && x_valid == 2) //一回しかこない
     {
+
       if(string[i] == '=')
-        equal_valid = 2;
+        equal_valid++;
       else
+      {
         string_valid =0;
+      }
+
 
       // if(string[i] > 47 && string[i] < 58)
       //   equal_valid = 2;
@@ -178,8 +193,9 @@ void a_mode(char *string, int t_flag)
       //   string_valid =0;
     }
 
-    if(number_valid == 1 && equal_valid == 2)
+    else if(number_valid == 1 && equal_valid == 2)
     {
+
       if(!(string[i] > 47 && string[i] < 58))
         string_valid =0;
       else if(string[i] > 47 && string[i] < 57)
@@ -197,7 +213,8 @@ void a_mode(char *string, int t_flag)
 
   if(t_flag == 0)
   {
-    if(string_valid == 1 && m_total>0 && x_total > 0 && num_total < 0 && num_total < 4)
+
+    if(string_valid == 1 && m_total>0 && x_total > 0 && num_total > 0 && num_total < 4)
       printf("yes\n");
     else
       printf("no\n" );
