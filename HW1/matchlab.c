@@ -1,3 +1,11 @@
+/*
+* CS4400 HW1
+* Authur: Taku Sakikawa
+*/
+
+// Reference: https://stackoverflow.com/questions/5457608/how-to-remove-the-character-at-a-given-index-from-a-string-in-c
+// Referenced this for remove_char method. 
+
 #include <stdio.h>
 #include<string.h>
 #include <stdlib.h>
