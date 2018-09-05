@@ -4,7 +4,7 @@
 */
 
 // Reference: https://stackoverflow.com/questions/5457608/how-to-remove-the-character-at-a-given-index-from-a-string-in-c
-// Referenced this for remove_char method. 
+// Referenced this for remove_char method.
 
 #include <stdio.h>
 #include<string.h>
@@ -41,6 +41,7 @@ int main(int argc, char *argv[])  // argc 何個arg があるか　argv 内容st
 
       case 1:
       b_mode(argv[str_index], t_flag);
+      // printf("%s\n", argv[str_index]);
       str_index++;
       break;
 
@@ -205,7 +206,7 @@ void a_mode(char *string, int t_flag)
 
 void b_mode(char *string, int t_flag)
 {
-  char * newstr = (char*)malloc(strlen(string)*3);
+  char * newstr = (char*)malloc(strlen(string)*2+1);
   if(t_flag == 0)
   {
     if(b_is_valid_string(string, newstr) ==1)
@@ -215,9 +216,11 @@ void b_mode(char *string, int t_flag)
   }
   else
   {
-
     if(b_is_valid_string(string, newstr) == 1)
+    {
       printf("%s\n",newstr);
+    }
+      //printf("%s\n",newstr);
   }
 
   free(newstr);
@@ -241,13 +244,11 @@ void c_mode(char *string, int t_flag)
     if(c_is_valid_string(string, newstr) == 1)
     {
       printf("%s\n",newstr);
+      printf("newstr:: %s\n",newstr );
     }
   }
 
   free(newstr);
-
-
-
 }
 
 
@@ -273,6 +274,7 @@ int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
   int insert_num = 0;
 
   int i;
+
   for(i=0; i < strlen(str); i++)
   {
 
@@ -324,17 +326,19 @@ int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
 
     if(equal_done == 1||equal_done == 2)
     {
+
       if(equal_done == 1)
         equal_done++;
 
       // check after = , has to be number or upper case letter
       else if(str[i] > 64 && str[i] < 91) // check upper
       {
-
         num_of_upper++;
       }
-      else if(!((str[i] > 47 && str[i] < 58) || str[i] == odd_num)) // check number
+      // else if(!((str[i] > 47 && str[i] < 58) && str[i] == odd_num)) // check number
+      else if (str[i] != odd_num+'0')
       {
+
         return 0;
       }
     }
@@ -342,12 +346,17 @@ int b_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
     insert_num = i %8;
     newstr[i*2] = str[i];
     newstr[i*2+1] = insert_num+'0';
+
   } // end of for loop
+  newstr[strlen(str)*2] = '\0';
 
   //check upper case number
   if(num_of_upper %2 != 1)
     return 0;
+
+
   return is_valid;
+
 
 }
 
@@ -474,6 +483,8 @@ int c_is_valid_string(char *str, char* newstr) // return 1 if valid, otherwise r
   return is_valid;
 
 }
+
+
 
 void remove_char(char *str, char remove_c)
 {
