@@ -244,7 +244,6 @@ void c_mode(char *string, int t_flag)
     if(c_is_valid_string(string, newstr) == 1)
     {
       printf("%s\n",newstr);
-      printf("newstr:: %s\n",newstr );
     }
   }
 
