@@ -1,6 +1,6 @@
 int sum(int n);
 
-int array[2] = {1,2};
+static int array[2] = {1,2};
 
 int main()
 {
