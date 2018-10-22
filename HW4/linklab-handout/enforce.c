@@ -44,10 +44,78 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
     // /* testin for section by name ///////////////////////////////////
     // printf("%p\n", test);
     // */////////////////////////////////////////////////////////////////
+  }
+  printf("\n");
 
+  ////////// dynamic symbol //////////////////////////////////
+  Elf64_Shdr *dynsym_shdr = section_by_name(ehdr, ".dynsym");
+  Elf64_Sym *syms = AT_SEC(ehdr, dynsym_shdr);
+  strs = AT_SEC(ehdr, section_by_name(ehdr, ".dynstr"));
+  int count = dynsym_shdr->sh_size / sizeof(Elf64_Sym);
+  Elf64_Sym **function_arr = malloc(100*sizeof(Elf64_Sym*));
+
+  int f_array_index = 0;
+  for(i = 0 ; i< count; i++)
+  {
+    // printf("%s\n", strs+syms[i].st_name);
+
+    if(ELF64_ST_TYPE(syms[i].st_info) == STT_FUNC)
+    {
+      function_arr[f_array_index++] = syms+i;
+      printf("hello:  %d\t%s\n", (int)(syms+i)->st_size,strs+syms[i].st_name);
+      // printf("    %d\n", (syms+i)->st_size );
+
+      // st_size = 0 if size if unknown -> if the function comes from a different file.
+      // st_size > 0 if size if determined (e.g. never_ok has size of 21 because never_ok is from .so file)
+
+    }
+
+  }
+
+  printf("\n");
+  ////////// dynamic symbol //////////////////////////////////
+
+
+  ///////// gloval variables //////////////////////////////////////
+  Elf64_Shdr *rela_dyn_shdr = section_by_name(ehdr, ".rela.dyn");
+  Elf64_Rela *relas = AT_SEC(ehdr, rela_dyn_shdr);
+  count = rela_dyn_shdr->sh_size / sizeof(Elf64_Rela);
+  for (i = 0; i < count; i++)
+  {
+    printf("%s\n", strs+syms[ELF64_R_SYM(relas[i].r_info)].st_name);
+    printf("%d\n", (int)ELF64_R_SYM(relas[i].r_info));
+    // printf("\n");f
+  }
+  printf("\n");
+  ///////// gloval variables //////////////////////////////////////
+
+
+
+  ////// gloval function ////////
+  Elf64_Shdr *rela_plt_shdr = section_by_name(ehdr, ".rela.plt");
+  Elf64_Rela *relas2 = AT_SEC(ehdr, rela_plt_shdr);
+  count = rela_plt_shdr->sh_size / sizeof(Elf64_Rela);
+  for (i = 0; i < count; i++)
+  {
+    printf("%s\n", strs+syms[ELF64_R_SYM(relas2[i].r_info)].st_name);
+    printf("%d\n", (int)ELF64_R_SYM(relas2[i].r_info));
+    // printf("\n");f
+  }
+  ////// gloval function ////////
+
+  printf("\n" );
+
+  //function_arr has all the function used in so file (e.g. ex1.so == close_it, open_it, always_ok, etc..)
+  // f_array_index is the size of function_arr, sizeof(function_arr) does not work....
+  for(i = 0; i < f_array_index; i++)
+  {
+    printf("function_name:  %s\n", strs+function_arr[i]->st_name);
 
 
   }
+
+
+
 
 
 
