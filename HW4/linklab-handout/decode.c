@@ -47,7 +47,7 @@ void decode(instruction_t *ins, code_t *code_ptr, Elf64_Addr code_addr)
     ins->addr = code_addr + 2 + rel_addr;
     return;
   }
-  
+
   if (code_ptr[0] == 0xe8) {
     /* call */
     int rel_addr = *(int *)(code_ptr + 1);
@@ -56,7 +56,7 @@ void decode(instruction_t *ins, code_t *code_ptr, Elf64_Addr code_addr)
     ins->length += 5;
     return;
   }
-  
+
   if (code_ptr[0] == 0x90) {
     /* nop */
     ins->op = OTHER_OP;
@@ -108,7 +108,7 @@ void decode(instruction_t *ins, code_t *code_ptr, Elf64_Addr code_addr)
     ins->length += 1;
     return;
   }
-    
+
 
   if ((code_ptr[0] == 0x63)    /* mov */
       || (code_ptr[0] == 0x89) /* mov */
@@ -234,11 +234,11 @@ void replace_with_crash(code_t *code_ptr, instruction_t *ins)
               ins->length);
       exit(1);
     }
-    
+
     /* int $3 */
     code_ptr[0] = 0xCD;
     code_ptr[1] = 3;
-    
+
     /* fill rest with nop */
     for (i = 2; i < ins->length; i++)
       code_ptr[i] = 0x90;

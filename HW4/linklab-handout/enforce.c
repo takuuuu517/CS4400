@@ -8,6 +8,8 @@
 #include <errno.h>
 #include <string.h>
 #include <elf.h>
+#include "decode.h"
+
 
 /* Given the in-memory ELF header pointer as `ehdr` and a section
    header pointer as `shdr`, returns a pointer to the memory that
@@ -59,7 +61,7 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   {
     // printf("%s\n", strs+syms[i].st_name);
 
-    if(ELF64_ST_TYPE(syms[i].st_info) == STT_FUNC)
+    if(ELF64_ST_TYPE(syms[i].st_info) == STT_FUNC && (syms+i)->st_size != 0 )
     {
       function_arr[f_array_index++] = syms+i;
       printf("hello:  %d\t%s\n", (int)(syms+i)->st_size,strs+syms[i].st_name);
@@ -111,12 +113,30 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   {
     printf("function_name:  %s\n", strs+function_arr[i]->st_name);
 
+    int j = function_arr[i]->st_shndx;
+
+    instruction_t ins = {0,0,0};
+    code_t* code_ptr = AT_SEC(ehdr, shdrs + j)+(function_arr[i]->st_value - shdrs[j].sh_addr); // from the video 14
+    Elf64_Addr code_addr = function_arr[i]->st_value;
+    // printf("code_ptr:  %p\n",code_ptr );
+    // printf("code_addr: %p\n",code_addr );
+    // printf("ins:       %p\n",&ins );
+
+
+    // typedef struct {
+    //   instruction_op_t op; /* operation performed by the instruction */
+    //   int length; /* length of the instruction in bytes */
+    //   Elf64_Addr addr; /* set only for some kinds of instructions */
+    // } instruction_t;
+
+
+    // decode(instruction_t *ins, code_t *code_ptr, int code_addr)
+    decode(&ins, code_ptr, code_addr);
+    printf("%d\n", ins.op);
+
+
 
   }
-
-
-
-
 
 
 }
