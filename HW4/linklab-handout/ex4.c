@@ -5,9 +5,11 @@
    function_0(-1) => crash
    function_0(0) => 2
    function_0(1) => crash
+ 
    function_1(-1) => crash
    function_1(-2) => 4
    function_1(0) => 3
+ 
    function_2(-1) => 5
    function_2(0) => 1
 */
@@ -22,14 +24,14 @@ int other_v2 = 5;
 
 int function_0(int sel) {
   if (sel < 0)
-    return protected_v1;
+    return protected_v1; // needs open 
   else if (sel == 0) {
     int v;
     open_it();
     v = protected_v2;
     close_it();
     return v;
-  } else 
+  } else
     return protected_v3;
 }
 

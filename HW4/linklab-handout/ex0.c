@@ -14,6 +14,9 @@
 int other_v0 = 0;
 int other_v1 = 1;
 
+//testing
+int protected_v1 = 3;
+
 int always_ok(int sel) {
   open_it();
   close_it();
@@ -34,6 +37,7 @@ int also_always_ok(int sel) {
 
 int never_ok(int sel) {
   open_it();
+  open_it();
   return 3; /* oops! - return without a balancing close */
 }
 
@@ -50,4 +54,10 @@ int still_never_ok(int sel) {
   close_it();
   close_it(); /* oops! - not currently open */
   return 5;
+}
+
+int test(int sel)
+{
+  sel += protected_v1;
+  return sel;
 }

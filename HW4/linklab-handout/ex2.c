@@ -22,11 +22,11 @@ int always_ok(int sel) {
   }
 }
 
-int sometimes_ok(int sel) {
+int sometimes_ok(int sel) { // ok if sell != 0
   open_it();
   if (sel) {
     close_it();
-    return 1;
+    return   1;
   } else {
     return 0; /* oops! - didn't close before return */
   }

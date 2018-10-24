@@ -18,6 +18,17 @@
 
 Elf64_Shdr *section_by_index(Elf64_Ehdr *ehdr, int index); // from video
 Elf64_Shdr *section_by_name(Elf64_Ehdr *ehdr, char* name); // from video
+char * op_description(int op);
+
+
+int mode; // 0 = close, 1 = open
+int mode_cp;
+// when it sees "close method" add 1
+// when it sees "open method" substract 1
+
+ Elf64_Addr last_code_adrr;
+
+void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, Elf64_Sym **function_arr, int i, Elf64_Ehdr *ehdr, int mode );
 
 
 
@@ -85,14 +96,15 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   for (i = 0; i < count; i++)
   {
     printf("%s\n", strs+syms[ELF64_R_SYM(relas[i].r_info)].st_name);
-    printf("%d\n", (int)ELF64_R_SYM(relas[i].r_info));
+    // printf("%d\n", (int)ELF64_R_SYM(relas[i].r_info));
+    printf("r_offset  %x\n", relas[i].r_offset);
     // printf("\n");f
   }
   printf("\n");
   ///////// gloval variables //////////////////////////////////////
 
 
-
+  printf("%s\n","function" );
   ////// gloval function ////////
   Elf64_Shdr *rela_plt_shdr = section_by_name(ehdr, ".rela.plt");
   Elf64_Rela *relas2 = AT_SEC(ehdr, rela_plt_shdr);
@@ -100,7 +112,8 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   for (i = 0; i < count; i++)
   {
     printf("%s\n", strs+syms[ELF64_R_SYM(relas2[i].r_info)].st_name);
-    printf("%d\n", (int)ELF64_R_SYM(relas2[i].r_info));
+    printf("r_offset  %x\n", relas2[i].r_offset);
+    // printf("%d\n", (int)ELF64_R_SYM(relas2[i].r_info));
     // printf("\n");f
   }
   ////// gloval function ////////
@@ -111,29 +124,60 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   // f_array_index is the size of function_arr, sizeof(function_arr) does not work....
   for(i = 0; i < f_array_index; i++)
   {
-    printf("function_name:  %s\n", strs+function_arr[i]->st_name);
+    if(strcmp(strs+function_arr[i]->st_name, "function_1")==0)
+    {
+      printf("\n\n\n\n\n\n\nfunction_name:  %s\n", strs+function_arr[i]->st_name);
 
-    int j = function_arr[i]->st_shndx;
+      int j = function_arr[i]->st_shndx;
 
-    instruction_t ins = {0,0,0};
-    code_t* code_ptr = AT_SEC(ehdr, shdrs + j)+(function_arr[i]->st_value - shdrs[j].sh_addr); // from the video 14
-    Elf64_Addr code_addr = function_arr[i]->st_value;
-    // printf("code_ptr:  %p\n",code_ptr );
-    // printf("code_addr: %p\n",code_addr );
-    // printf("ins:       %p\n",&ins );
-
-
-    // typedef struct {
-    //   instruction_op_t op; /* operation performed by the instruction */
-    //   int length; /* length of the instruction in bytes */
-    //   Elf64_Addr addr; /* set only for some kinds of instructions */
-    // } instruction_t;
+      instruction_t ins = {0,0,0};
+      code_t* code_ptr = AT_SEC(ehdr, shdrs + j)+(function_arr[i]->st_value - shdrs[j].sh_addr); // from the video 14
+      Elf64_Addr code_addr = function_arr[i]->st_value;
+      // printf("code_ptr:  %p\n",code_ptr );
+      // printf("code_addr: %p\n",code_addr );
+      // printf("ins:       %p\n",&ins );
 
 
-    // decode(instruction_t *ins, code_t *code_ptr, int code_addr)
-    decode(&ins, code_ptr, code_addr);
-    printf("%d\n", ins.op);
+      // typedef struct {
+      //   instruction_op_t op; /* operation performed by the instruction */
+      //   int length; /* length of the instruction in bytes */
+      //   Elf64_Addr addr; /* set only for some kinds of instructions */
+      // } instruction_t;
+      mode = 0;
+      decode_handler(ins, code_ptr, code_addr, function_arr,i, ehdr, mode);
+    }
 
+
+    // decode(&ins, code_ptr, code_addr);
+    // printf("ins.op:  %s\n", op_description(ins.op));
+    // printf("length:  %d\n", ins.length);
+    // printf("code_ptr:  %x\n", *code_ptr);
+    // printf("\n" );
+    //
+    // code_ptr += ins.length;
+    // code_addr += ins.length;
+    // decode(&ins, code_ptr, code_addr);
+    // printf("ins.op:  %s\n", op_description(ins.op));
+    // printf("length:  %d\n", ins.length);
+    // printf("code_ptr:  %x\n", *code_ptr);
+    // printf("\n" );
+
+
+    // int accumBytes;
+    // int k;
+    // for(accumBytes = 0; accumBytes < function_arr[i]->st_size; accumBytes+=ins.length)
+    // {
+    //   decode(&ins, code_ptr, code_addr);
+    //   for(k = 0; k<ins.length; k++)
+    //     printf("%x ", code_ptr[k]);
+    //
+    //     // code_ptr += ins.length;
+    //     code_ptr = (char*)code_ptr+ins.length;
+    //
+    //   // code_addr += ins.length;
+    //
+    //   printf("\n" );
+    // }
 
 
   }
@@ -141,13 +185,250 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
 
 }
 
+void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, Elf64_Sym **function_arr, int i ,Elf64_Ehdr *ehdr, int mode)
+{
+  // int mode = 0;
+
+  int accumBytes;
+  for(accumBytes = 0; accumBytes < function_arr[i]->st_size; accumBytes+=ins.length) // go to each instruction in the function
+  {
+    decode(&ins, code_ptr, code_addr);
+    printf("ins.op:  %s\n", op_description(ins.op)) ;
+    printf("length:  %d\n", ins.length);
+    printf("code_ptr:  %x\n", *code_ptr);
+    printf("ins.addr:  %p\n", ins.addr);
+    printf("code_addr:  %p\n", code_addr);
+
+    if(  ins.op == MOV_ADDR_TO_REG_OP)
+    {
+      Elf64_Shdr* shdrs = (void*)ehdr + ehdr->e_shoff;
+      char *strs = AT_SEC(ehdr, section_by_name(ehdr, ".dynstr"));
+      Elf64_Shdr *rela_dyn_shdr = section_by_name(ehdr, ".rela.dyn");
+      Elf64_Rela *relas = AT_SEC(ehdr, rela_dyn_shdr);
+      Elf64_Shdr *dynsym_shdr = section_by_name(ehdr, ".dynsym");
+      Elf64_Sym *syms = AT_SEC(ehdr, dynsym_shdr);
+
+      char* variable;
+
+      int k, count = rela_dyn_shdr->sh_size / sizeof(Elf64_Rela);
+
+      for (k = 0; k < count; k++) // determine  if there are gloval variable.
+      {
+        if(relas[k].r_offset == ins.addr) // gloval variable found.
+        {
+          variable = strs+syms[ELF64_R_SYM(relas[k].r_info)].st_name;
+          if(mode == 0 && is_protected(variable)) // if close mode and protect_variable -> replace with crash
+          {
+            replace_with_crash(code_ptr, &ins);
+          }
+          printf("%s\n",variable);
+        }
+      }
+      last_code_adrr = code_addr;
+      printf("%s\n", "mov");
+    }
+    else if( ins.op == JMP_TO_ADDR_OP)
+    {
+      last_code_adrr = code_addr;
+      printf("%s\n", "jmp");
+    }
+    else if(  ins.op == MAYBE_JMP_TO_ADDR_OP)
+    {
+      //if
+      // int offset = ins.addr - code_addr;
+      // decode_handler(ins,code_ptr+offset, ins.addr, function_arr,  i, ehdr);
+
+      // else
+      // code_ptr += ins.length;
+      // code_addr += ins.length;
+      // printf("else  \n" );
+      // decode_handler(ins,code_ptr, ins.addr, function_arr,  i, ehdr);
+
+
+
+      // if
+      printf("else  \n" );
+
+      // decode(&ins3, code_ptr+ins.length, code_addr+ins.length);
+      // printf("asdf:   %x\n",*code_ptr );
+      // printf("asdf:   %x\n",*(code_ptr+ins.length) );
+
+      // mode_cp = mode;
+      decode_handler(ins,code_ptr+ins.length, code_addr+ins.length, function_arr,  i, ehdr, mode);
+      // if(mode != 0 )
+      // replace_with_crash( code_ptr+ins.length, &ins3);
+
+
+      printf("\nasdkfhaksdhflkashd;fjas;ldf;lasdjf;ljas;lkdjf           aslfja;lsfalksj\n\n" );
+
+      // else
+      // instruction_t ins3 = {0,0,0};
+
+      int offset = ins.addr - code_addr;
+      instruction_t ins2 = {0,0,0};
+      // decode(&ins3, code_ptr+offset, ins.addr);
+      // mode =mode_cp;
+
+      decode_handler(ins2,  code_ptr+offset,  ins.addr, function_arr,  i, ehdr ,mode);
+
+
+      Elf64_Addr special_length = last_code_adrr - code_addr;
+      code_ptr += special_length;
+      code_addr += special_length;
+      accumBytes+= special_length;
+      printf("%x\n", code_addr);
+
+
+
+      // if(mode != 0 )
+      // replace_with_crash( code_ptr+offset, &ins3);
+      last_code_adrr = code_addr;
+
+      printf("%s\n", "maybe jmp");
+    }
+    else if( ins.op == CALL_OP ) // call open and close, etc
+    {
+      char *strs = AT_SEC(ehdr, section_by_name(ehdr, ".dynstr"));
+      Elf64_Shdr *rela_plt_shdr = section_by_name(ehdr, ".rela.plt");
+      Elf64_Rela *relas2 = AT_SEC(ehdr, rela_plt_shdr);
+      int k,count = rela_plt_shdr->sh_size / sizeof(Elf64_Rela);
+      Elf64_Shdr *dynsym_shdr = section_by_name(ehdr, ".dynsym");
+      Elf64_Sym *syms = AT_SEC(ehdr, dynsym_shdr);
+
+      instruction_t plt_ins = {0,0,0};
+      Elf64_Addr plt_addr = ins.addr;
+      int offset = plt_addr - code_addr;
+      code_t *plt_ptr = code_ptr + offset;
+      /* printf("\t%p\n", ins.jmp_to_addr.addr); */
+
+      printf("plt\n" );
+      decode(&plt_ins, plt_ptr, plt_addr);
+      printf("plt_ins.op:  %s\n", op_description(plt_ins.op)) ;
+      printf("length:  %d\n", plt_ins.length);
+      printf("plt_ptr:  %x\n", *plt_ptr);
+      printf("plt_ins.addr:  %p\n", plt_ins.addr);
+
+
+      for (k = 0; k < count; k++)
+      {
+        if(relas2[k].r_offset == plt_ins.addr)
+        {
+          if(strcmp(strs+syms[ELF64_R_SYM(relas2[k].r_info)].st_name, "open_it")==0)
+          {
+            mode++;
+            printf("%s\n","open" );
+          }
+          else if(strcmp(strs+syms[ELF64_R_SYM(relas2[k].r_info)].st_name, "close_it")==0)
+          {
+            mode--;
+            printf("%s\n","close" );
+          }
+          printf("mode  %d\n", mode );
+          if(!(mode == 0 || mode == 1))
+          {
+            replace_with_crash(code_ptr, &ins);
+          }
+        }
+
+        // printf("%s\n", strs+syms[ELF64_R_SYM(relas2[k].r_info)].st_name);
+        // printf("r_offset  %x\n", relas2[k].r_offset);
+        // printf("%d\n", (int)ELF64_R_SYM(relas2[i].r_info));
+        // printf("\n");f
+      }
+
+
+
+
+
+      // int count = rela_plt_shdr->sh_size / sizeof(Elf64_Rela);
+
+      last_code_adrr = code_addr;
+      printf("%s\n", "call");
+    }
+    // else if(strcmp(op_description(ins.op), "RET_OP") == 0)
+    else if( ins.op == RET_OP)
+    {
+      if(mode != 0 )
+      {
+        printf("%x\n", code_ptr );
+        replace_with_crash(code_ptr, &ins);
+      }
+
+      printf("mode at return:  %d\n", mode);
+      printf("%s\n", "return ");
+      last_code_adrr = code_addr;
+      return;
+    }
+    else if( ins.op == OTHER_OP)
+    {
+      // can be ignored
+      last_code_adrr = code_addr;
+      printf("%s\n", "other");
+    }
+    else
+    {
+      printf("%s\n", "NO");
+    }
+
+
+    printf("\n" );
+
+    code_ptr += ins.length;
+    code_addr += ins.length;
+  }
+}
+
 /*************************************************************/
+
+
+
+/*
+ * determine whether the variable is protected
+ * return 1 if it is protected
+ * return 0 if it is not.
+ */
+int is_protected(char * v)
+{
+  int len = strlen(v);
+  int i;
+  char * sub = malloc(15*sizeof(char));
+
+  if(len < 10)
+    return 0;
+  else
+  {
+    for(i=0; i< 10; i++)
+      sub[i] = v[i];
+    if(strcmp(sub, "protected_") == 0)
+      return 1;
+  }
+  return 0;
+}
+
+// for testing
+char * op_description(int op)
+{
+  if(op == 0)
+    return "MOV_ADDR_TO_REG_OP";
+  else if( op== 1)
+    return "JMP_TO_ADDR_OP";
+  else if( op== 2)
+    return "MAYBE_JMP_TO_ADDR_OP";
+  else if( op== 3)
+    return "CALL_OP";
+  else if( op== 4)
+    return "RET_OP";
+  else if( op== 5)
+    return "OTHER_OP";
+  else
+    return "error";
+}
+
 
 Elf64_Shdr *section_by_index(Elf64_Ehdr *ehdr, int index)
 {
   Elf64_Shdr * result ;
   Elf64_Shdr* shdrs = (void*)ehdr + ehdr->e_shoff;
-
   result = shdrs+index;
   return result;
 }
@@ -198,7 +479,7 @@ int main(int argc, char **argv) {
   Elf64_Ehdr *ehdr;
 
   if (argc != 3)
-    fail("expected two file names on the command line", 0);
+    fail("expected two file names on the strcmpmand line", 0);
 
 
 

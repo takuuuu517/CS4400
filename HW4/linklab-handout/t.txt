@@ -1,0 +1,88 @@
+
+ex0.o:     file format elf64-x86-64
+
+
+Disassembly of section .text:
+
+0000000000000000 <always_ok>:
+   0:	55                   	push   %rbp
+   1:	48 89 e5             	mov    %rsp,%rbp
+   4:	48 83 ec 10          	sub    $0x10,%rsp
+   8:	89 7d fc             	mov    %edi,-0x4(%rbp)
+   b:	b8 00 00 00 00       	mov    $0x0,%eax
+  10:	e8 00 00 00 00       	callq  15 <always_ok+0x15>
+  15:	b8 00 00 00 00       	mov    $0x0,%eax
+  1a:	e8 00 00 00 00       	callq  1f <always_ok+0x1f>
+  1f:	b8 01 00 00 00       	mov    $0x1,%eax
+  24:	c9                   	leaveq 
+  25:	c3                   	retq   
+
+0000000000000026 <also_always_ok>:
+  26:	55                   	push   %rbp
+  27:	48 89 e5             	mov    %rsp,%rbp
+  2a:	48 83 ec 10          	sub    $0x10,%rsp
+  2e:	89 7d fc             	mov    %edi,-0x4(%rbp)
+  31:	8b 05 00 00 00 00    	mov    0x0(%rip),%eax        # 37 <also_always_ok+0x11>
+  37:	01 45 fc             	add    %eax,-0x4(%rbp)
+  3a:	b8 00 00 00 00       	mov    $0x0,%eax
+  3f:	e8 00 00 00 00       	callq  44 <also_always_ok+0x1e>
+  44:	b8 00 00 00 00       	mov    $0x0,%eax
+  49:	e8 00 00 00 00       	callq  4e <also_always_ok+0x28>
+  4e:	b8 00 00 00 00       	mov    $0x0,%eax
+  53:	e8 00 00 00 00       	callq  58 <also_always_ok+0x32>
+  58:	8b 05 00 00 00 00    	mov    0x0(%rip),%eax        # 5e <also_always_ok+0x38>
+  5e:	01 45 fc             	add    %eax,-0x4(%rbp)
+  61:	b8 00 00 00 00       	mov    $0x0,%eax
+  66:	e8 00 00 00 00       	callq  6b <also_always_ok+0x45>
+  6b:	b8 00 00 00 00       	mov    $0x0,%eax
+  70:	e8 00 00 00 00       	callq  75 <also_always_ok+0x4f>
+  75:	b8 00 00 00 00       	mov    $0x0,%eax
+  7a:	e8 00 00 00 00       	callq  7f <also_always_ok+0x59>
+  7f:	8b 45 fc             	mov    -0x4(%rbp),%eax
+  82:	c9                   	leaveq 
+  83:	c3                   	retq   
+
+0000000000000084 <never_ok>:
+  84:	55                   	push   %rbp
+  85:	48 89 e5             	mov    %rsp,%rbp
+  88:	48 83 ec 10          	sub    $0x10,%rsp
+  8c:	89 7d fc             	mov    %edi,-0x4(%rbp)
+  8f:	b8 00 00 00 00       	mov    $0x0,%eax
+  94:	e8 00 00 00 00       	callq  99 <never_ok+0x15>
+  99:	b8 00 00 00 00       	mov    $0x0,%eax
+  9e:	e8 00 00 00 00       	callq  a3 <never_ok+0x1f>
+  a3:	b8 03 00 00 00       	mov    $0x3,%eax
+  a8:	c9                   	leaveq 
+  a9:	c3                   	retq   
+
+00000000000000aa <also_never_ok>:
+  aa:	55                   	push   %rbp
+  ab:	48 89 e5             	mov    %rsp,%rbp
+  ae:	48 83 ec 10          	sub    $0x10,%rsp
+  b2:	89 7d fc             	mov    %edi,-0x4(%rbp)
+  b5:	b8 00 00 00 00       	mov    $0x0,%eax
+  ba:	e8 00 00 00 00       	callq  bf <also_never_ok+0x15>
+  bf:	b8 00 00 00 00       	mov    $0x0,%eax
+  c4:	e8 00 00 00 00       	callq  c9 <also_never_ok+0x1f>
+  c9:	b8 00 00 00 00       	mov    $0x0,%eax
+  ce:	e8 00 00 00 00       	callq  d3 <also_never_ok+0x29>
+  d3:	b8 00 00 00 00       	mov    $0x0,%eax
+  d8:	e8 00 00 00 00       	callq  dd <also_never_ok+0x33>
+  dd:	b8 04 00 00 00       	mov    $0x4,%eax
+  e2:	c9                   	leaveq 
+  e3:	c3                   	retq   
+
+00000000000000e4 <still_never_ok>:
+  e4:	55                   	push   %rbp
+  e5:	48 89 e5             	mov    %rsp,%rbp
+  e8:	48 83 ec 10          	sub    $0x10,%rsp
+  ec:	89 7d fc             	mov    %edi,-0x4(%rbp)
+  ef:	b8 00 00 00 00       	mov    $0x0,%eax
+  f4:	e8 00 00 00 00       	callq  f9 <still_never_ok+0x15>
+  f9:	b8 00 00 00 00       	mov    $0x0,%eax
+  fe:	e8 00 00 00 00       	callq  103 <still_never_ok+0x1f>
+ 103:	b8 00 00 00 00       	mov    $0x0,%eax
+ 108:	e8 00 00 00 00       	callq  10d <still_never_ok+0x29>
+ 10d:	b8 05 00 00 00       	mov    $0x5,%eax
+ 112:	c9                   	leaveq 
+ 113:	c3                   	retq   
