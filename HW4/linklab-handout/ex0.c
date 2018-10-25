@@ -56,9 +56,3 @@ int still_never_ok(int sel) {
   close_it(); /* oops! - not currently open */
   return 5;
 }
-
-int test(int sel)
-{
-  sel += protected_v1;
-  return sel;
-}
