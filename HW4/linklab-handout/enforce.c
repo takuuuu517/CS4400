@@ -42,7 +42,7 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   Elf64_Sym **function_arr = malloc(100*sizeof(Elf64_Sym*));
   int f_array_index = 0;
 
-  for(i = 0 ; i< count;  i++)
+  for(i = 0 ; i< count;  i++) // put all the functions declared in the so file to an array
   {
     if(ELF64_ST_TYPE(syms[i].st_info) == STT_FUNC && (syms+i)->st_size != 0 )
       function_arr[f_array_index++] = syms+i; // create an array that contains pointer to the address of each function in the so file
@@ -54,8 +54,8 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   Elf64_Shdr *rela_plt_shdr = section_by_name(ehdr, ".rela.plt");
   count = rela_plt_shdr->sh_size / sizeof(Elf64_Rela);
 
-  //function_arr has all the function used in so file (e.g. ex1.so == close_it, open_it, always_ok, etc..)
-  for(i = 0; i < f_array_index; i++)
+  //iterate through the functions
+  for(i = 0; i < f_array_index; i++) //f_array_index is how many functions there are in the array
   {
     // if(strcmp(strs+function_arr[i]->st_name, "function_1")==0) // To test one function in the file
     // {
@@ -66,7 +66,7 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
       Elf64_Addr code_addr = function_arr[i]->st_value;
 
       mode = 0;
-      decode_handler(ins, code_ptr, code_addr, function_arr,i, ehdr, mode);
+      decode_handler(ins, code_ptr, code_addr, function_arr,i, ehdr, mode); // decode each function.
     // }
   }
 }
@@ -85,7 +85,7 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
   int accumBytes;
   for(accumBytes = 0; accumBytes < function_arr[i]->st_size; accumBytes+=ins.length) // go to each instruction in the function
   {
-    decode(&ins, code_ptr, code_addr);
+    decode(&ins, code_ptr, code_addr); // decode each instruction in the funciton.
 
     if(  ins.op == MOV_ADDR_TO_REG_OP)
     {
@@ -113,13 +113,25 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
     }
     else if(  ins.op == MAYBE_JMP_TO_ADDR_OP)
     {
+      /*
+       * decode if and else part of the instructions separately
+       * in assembly code else instruction comes before if
+       * code_addr+ins.length is the next instruction, which is the start of the instruction of else
+       * ins.addr has the run time address of the start address of if instruction
+       * ins.addr - code_addr = (offset) is how far the start of the if is from the current address
+       * adding the offset to the current addrest (code_addr) is the start address of the if instruction
+       * code_addr+ (last_code_adrr - code_addr)
+       */
+
       // else part
       decode_handler(ins,code_ptr+ins.length, code_addr+ins.length, function_arr,  i, ehdr, mode);
 
       int offset = ins.addr - code_addr; // calculate the offset to the if part
       instruction_t ins2 = {0,0,0};
-      decode_handler(ins2,  code_ptr+offset,  ins.addr, function_arr,  i, ehdr ,mode); // decode if part
+      // decode if part
+      decode_handler(ins2,  code_ptr+offset,  ins.addr, function_arr,  i, ehdr ,mode);
 
+      // special_length is the offset to the last instruction of the if (return)
       Elf64_Addr special_length = last_code_adrr - code_addr;
       code_ptr += special_length;
       code_addr += special_length;
