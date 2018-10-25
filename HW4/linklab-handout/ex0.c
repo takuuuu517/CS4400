@@ -24,6 +24,7 @@ int always_ok(int sel) {
 }
 
 int also_always_ok(int sel) {
+  always_ok(sel);
   sel += other_v0;
   open_it();
   close_it();

@@ -32,24 +32,24 @@ Disassembly of section .text:
   45:	85 ff                	test   %edi,%edi
   47:	78 1f                	js     68 <function_1+0x28>
   49:	31 c0                	xor    %eax,%eax
-  4b:	e8 00 00 00 00       	callq  50 <function_1+0x10>
+  4b:	e8 00 00 00 00       	callq  50 <function_1+0x10> // close
   50:	8b 1d 00 00 00 00    	mov    0x0(%rip),%ebx        # 56 <function_1+0x16>
-  56:	31 c0                	xor    %eax,%eax
-  58:	e8 00 00 00 00       	callq  5d <function_1+0x1d>
+  56:	31 c0                	xor    %eax,%eax            // return = protected_v3
+  58:	e8 00 00 00 00       	callq  5d <function_1+0x1d> // open
   5d:	89 d8                	mov    %ebx,%eax
   5f:	48 83 c4 10          	add    $0x10,%rsp
   63:	5b                   	pop    %rbx
-  64:	c3                   	retq   
+  64:	c3                   	retq                        // return -> return v;
   65:	0f 1f 00             	nopl   (%rax)
-  68:	31 c0                	xor    %eax,%eax
+  68:	31 c0                	xor    %eax,%eax            //
   6a:	89 7c 24 0c          	mov    %edi,0xc(%rsp)
-  6e:	e8 00 00 00 00       	callq  73 <function_1+0x33>
+  6e:	e8 00 00 00 00       	callq  73 <function_1+0x33> // open_it // line 40
   73:	8b 7c 24 0c          	mov    0xc(%rsp),%edi
   77:	8b 05 00 00 00 00    	mov    0x0(%rip),%eax        # 7d <function_1+0x3d>
   7d:	83 ff ff             	cmp    $0xffffffff,%edi
   80:	74 dd                	je     5f <function_1+0x1f>
   82:	31 c0                	xor    %eax,%eax
-  84:	e8 00 00 00 00       	callq  89 <function_1+0x49>
+  84:	e8 00 00 00 00       	callq  89 <function_1+0x49> // close // line 42
   89:	8b 05 00 00 00 00    	mov    0x0(%rip),%eax        # 8f <function_1+0x4f>
   8f:	eb ce                	jmp    5f <function_1+0x1f>
   91:	0f 1f 44 00 00       	nopl   0x0(%rax,%rax,1)

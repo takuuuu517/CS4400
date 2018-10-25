@@ -16,7 +16,10 @@ int other_v1 = 1;
 int protected_v2 = 2;
 int protected_v3 = 3;
 
+int never_ok(int sel);
+
 int always_ok(int sel) {
+  // never_ok(sel);
   open_it();
   sel += protected_v2;
   close_it();

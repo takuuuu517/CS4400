@@ -27,6 +27,7 @@ int mode_cp;
 // when it sees "open method" substract 1
 
  Elf64_Addr last_code_adrr;
+ int last_ins_length;
 
 void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, Elf64_Sym **function_arr, int i, Elf64_Ehdr *ehdr, int mode );
 
@@ -124,8 +125,8 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   // f_array_index is the size of function_arr, sizeof(function_arr) does not work....
   for(i = 0; i < f_array_index; i++)
   {
-    if(strcmp(strs+function_arr[i]->st_name, "function_1")==0)
-    {
+    // if(strcmp(strs+function_arr[i]->st_name, "function_1")==0)
+    // {
       printf("\n\n\n\n\n\n\nfunction_name:  %s\n", strs+function_arr[i]->st_name);
 
       int j = function_arr[i]->st_shndx;
@@ -145,7 +146,7 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
       // } instruction_t;
       mode = 0;
       decode_handler(ins, code_ptr, code_addr, function_arr,i, ehdr, mode);
-    }
+    // }
 
 
     // decode(&ins, code_ptr, code_addr);
@@ -226,11 +227,17 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
       }
       last_code_adrr = code_addr;
       printf("%s\n", "mov");
+
+      code_ptr += ins.length;
+      code_addr += ins.length;
+
+
     }
     else if( ins.op == JMP_TO_ADDR_OP)
     {
       last_code_adrr = code_addr;
       printf("%s\n", "jmp");
+      return;
     }
     else if(  ins.op == MAYBE_JMP_TO_ADDR_OP)
     {
@@ -247,7 +254,7 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
 
 
       // if
-      printf("else  \n" );
+      printf("\nelse  \n" );
 
       // decode(&ins3, code_ptr+ins.length, code_addr+ins.length);
       // printf("asdf:   %x\n",*code_ptr );
@@ -276,13 +283,18 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
       code_ptr += special_length;
       code_addr += special_length;
       accumBytes+= special_length;
-      printf("%x\n", code_addr);
+      // printf("%x\n", *(code_ptr+ins.length));
+      printf("%x\n", (code_addr));
+      // printf("%x\n", (ins.length));
 
 
 
       // if(mode != 0 )
       // replace_with_crash( code_ptr+offset, &ins3);
       last_code_adrr = code_addr;
+
+      code_ptr += last_ins_length;
+      code_addr += last_ins_length;
 
       printf("%s\n", "maybe jmp");
     }
@@ -343,6 +355,8 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
       // int count = rela_plt_shdr->sh_size / sizeof(Elf64_Rela);
 
       last_code_adrr = code_addr;
+      code_ptr += ins.length;
+      code_addr += ins.length;
       printf("%s\n", "call");
     }
     // else if(strcmp(op_description(ins.op), "RET_OP") == 0)
@@ -356,7 +370,9 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
 
       printf("mode at return:  %d\n", mode);
       printf("%s\n", "return ");
-      last_code_adrr = code_addr;
+      // last_code_adrr = code_addr;
+      // last_ins_length = ins.length;
+
       return;
     }
     else if( ins.op == OTHER_OP)
@@ -364,6 +380,8 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
       // can be ignored
       last_code_adrr = code_addr;
       printf("%s\n", "other");
+      code_ptr += ins.length;
+      code_addr += ins.length;
     }
     else
     {
@@ -372,9 +390,6 @@ void decode_handler(instruction_t ins, code_t *code_ptr, Elf64_Addr code_addr, E
 
 
     printf("\n" );
-
-    code_ptr += ins.length;
-    code_addr += ins.length;
   }
 }
 
