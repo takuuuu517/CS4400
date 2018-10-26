@@ -39,7 +39,7 @@ void enforce(Elf64_Ehdr *ehdr) { // ehdr = output so file　header address {e_sh
   Elf64_Shdr *dynsym_shdr = section_by_name(ehdr, ".dynsym");
   Elf64_Sym *syms = AT_SEC(ehdr, dynsym_shdr);
   int count = dynsym_shdr->sh_size / sizeof(Elf64_Sym);
-  Elf64_Sym **function_arr = malloc(100*sizeof(Elf64_Sym*));
+  Elf64_Sym **function_arr = malloc(count*sizeof(Elf64_Sym*)); // count is the max of the array size
   int f_array_index = 0;
 
   for(i = 0 ; i< count;  i++) // put all the functions declared in the so file to an array

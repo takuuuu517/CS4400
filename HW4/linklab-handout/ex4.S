@@ -85,16 +85,16 @@ Disassembly of section .text:
   e0:	53                   	push   %rbx
   e1:	31 c0                	xor    %eax,%eax
   e3:	89 fb                	mov    %edi,%ebx
-  e5:	e8 00 00 00 00       	callq  ea <function_3+0xa> // open
+  e5:	e8 00 00 00 00       	callq  ea <function_3+0xa>
   ea:	31 c0                	xor    %eax,%eax
-  ec:	e8 00 00 00 00       	callq  f1 <function_3+0x11> // close
+  ec:	e8 00 00 00 00       	callq  f1 <function_3+0x11>
   f1:	31 c0                	xor    %eax,%eax
-  f3:	e8 00 00 00 00       	callq  f8 <function_3+0x18> // open
+  f3:	e8 00 00 00 00       	callq  f8 <function_3+0x18>
   f8:	85 db                	test   %ebx,%ebx
   fa:	78 14                	js     110 <function_3+0x30>
   fc:	8b 1d 00 00 00 00    	mov    0x0(%rip),%ebx        # 102 <function_3+0x22>
  102:	31 c0                	xor    %eax,%eax
- 104:	e8 00 00 00 00       	callq  109 <function_3+0x29> // close in else
+ 104:	e8 00 00 00 00       	callq  109 <function_3+0x29>
  109:	8d 43 01             	lea    0x1(%rbx),%eax
  10c:	5b                   	pop    %rbx
  10d:	c3                   	retq   
