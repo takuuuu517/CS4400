@@ -15,7 +15,7 @@ int main(int argc, char **argv)
   int n, seed, i, playing_n, min_init_distance, max_init_distance;
   int target_x, target_y;
   player_t *players;
-  
+
   if (argc < 5) {
     fprintf(stderr, "%s: need <random-seed> <player-count> <min-distance> <max-distance> arguments\n", argv[0]);
     return 1;
@@ -78,7 +78,7 @@ int main(int argc, char **argv)
       dist = min_init_distance;
       if (min_init_distance < max_init_distance)
         dist += next_random() % (max_init_distance - min_init_distance);
-      
+
       dx = next_random() % dist;
       dy = dist - dx;
       if (next_random() & 0x1)

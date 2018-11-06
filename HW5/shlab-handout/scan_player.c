@@ -4,11 +4,10 @@
 int main(int argc, char **argv)
 {
   int x, y;
-
   read_position(argv[0], &x, &y);
 
   /* Go to 0, 0 */
-  
+
   if (x != 0) {
     write_position(0, y);
     if (read_guidance(argv[0]) == WINNER)

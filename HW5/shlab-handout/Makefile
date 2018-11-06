@@ -6,7 +6,7 @@ CFLAGS = -Wall -O2 -I.
 HELPERS = io.c
 HELPERS_DEP = $(HELPERS) io.h
 
-PLAYERS = scan_player step_player jump_player fumble_player garbled_player distracted_player unreliable_player 
+PLAYERS = scan_player step_player jump_player fumble_player garbled_player distracted_player unreliable_player
 
 all: game_maker $(PLAYERS) run_tournament
 
