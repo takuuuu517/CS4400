@@ -16,7 +16,39 @@ static int count = 0;
 static int win_counter= 0;
 static int wrong_counter = 0;
 
+
+// ctrl c
+static int **game_result;
+// static int rround;
+static int current_round;
+static int play_nn;
+
+  // static int game_result[][3];
+  // static int nn == 0 ;
+//
+
 pid_t pid, pid2;
+
+void ctl_c_handler(int sigchld) {
+
+  int f;
+  sio_putl(current_round+1);
+  sio_puts("\n");
+
+  // game_result[0][0] = 0 ;
+  for(f=0; f<play_nn  ; f++)
+  {
+    sio_putl(game_result[f][0]);
+    sio_puts(" ");
+    sio_putl(game_result[f][1]);
+    sio_puts(" ");
+    sio_putl(game_result[f][2]);
+    sio_puts("\n");
+
+
+  }
+    _exit(0);
+}
 
 void done(int sigchld) {
   sio_puts("done\n");
@@ -62,20 +94,27 @@ int main(int argc, char **argv)
 
 static void run_tournament(int seed, int rounds, int n, char **progs)
 {
+  play_nn = n ;
   // Signal(SIGCHLD, done);
   pid_t pids[n];
   int wrong_player[n];
 
   // どっかのタイミングでgame maker プログラムをやる。
-  int current_round;
+  // int current_round;
   char buf[7];
 
 
 
-  int game_result[n][3]; // player1(n):[win_count][lose_count][fail_count]
+  // int game_result[n][3]; // player1(n):[win_count][lose_count][fail_count]
+  int f;
+
+  // static int **game_result;
+  game_result= (int **)malloc(n * sizeof(int *));
+    for (f=0; f<n; f++)
+         game_result[f] = (int *)malloc(3 * sizeof(int));
 
   // initialize the game result array
-  int f;
+  // int f;
   for(f=0; f< n ; f++)
   {
     game_result[f][0] = 0 ; // win = 0
@@ -83,10 +122,17 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
     game_result[f][2] = 0 ; // fault = 0
     wrong_player[f] = -1;
   }
+  Signal(SIGINT, ctl_c_handler);
+
+  sigset_t sigs;
+  Sigemptyset(&sigs);
+  Sigaddset(&sigs, SIGINT);
 
 
   for(current_round = 0; current_round < rounds; current_round++) // change 2 to rounds
   {
+    Sigprocmask(SIG_BLOCK, &sigs, NULL);
+
     done_flag =0 ;
     count = 0;
     win_counter=0;
@@ -133,7 +179,7 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
         close(gameMakerOut[WRITE]);
         close(gameMakerIn[READ]);
 
-
+        Setpgid(0, 0);
         Execve("game_maker", game_maker_argv, environ);
     }
     else
@@ -145,9 +191,8 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
       char buffer3[7*n+7+1];
       int nn = Rio_readn(gameMakerIn[READ], buffer, 7);
       buffer[nn] = 0;
-      printf("\ncurrent_round: %d\n",current_round );
-
-      printf("target: %s",buffer );
+      // printf("\ncurrent_round: %d\n",current_round );
+      // printf("target: %s",buffer );
 
 
 
@@ -220,21 +265,21 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
           {
             char buffer2[8];
             char buffer[8];
-            printf("\nturn:   %d\n", count );
-            printf("player_n:  %d\n", n);
-            printf("testing\n" );
+            // printf("\nturn:   %d\n", count );
+            // printf("player_n:  %d\n", n);
+            // printf("testing\n" );
 
 
             int nn = Rio_readn(gameMakerIn[READ], buffer, 7); // read message from game maker
             buffer[nn] = 0;
             // if(count == 0 )
             // {
-              printf("game maker message: %s",buffer );
-
-              printf("game_result: %d\n",game_result[i][2] );
+              // printf("game maker message: %s",buffer );
+              //
+              // printf("game_result: %d\n",game_result[i][2] );
 
             // }
-            printf("player:    %d\n", i);
+            // printf("player:    %d\n", i);
             // Rio_writen(pl_pipeOut[i][WRITE], buffer, 7 ); // send game_maker message to player // send winner
 //
 
@@ -242,16 +287,16 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
             {
               Rio_writen(pl_pipeOut[i][WRITE], buffer, 7 ); // send game_maker message to player // send winner
 
-              printf("winwinwinwinwinwinwinwinwinwinwinwinwinwinwinwin\n" );
+              // printf("winwinwinwinwinwinwinwinwinwinwinwinwinwinwinwin\n" );
               int status;
               pid_t game_p = Waitpid(pid, &status, 0);
-              printf("\n\ncurrent_round:  %d\n",current_round );
+              // printf("\n\ncurrent_round:  %d\n",current_round );
               done_flag++;
               win_counter++;
 
 
-              printf("game pid:  %d\n", pid);
-              printf("game done pid:  %d\n", game_p);
+              // printf("game pid:  %d\n", pid);
+              // printf("game done pid:  %d\n", game_p);
 
               close(gameMakerOut[WRITE]);
               close(gameMakerIn[READ]);
@@ -262,14 +307,14 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
               int p;
               for(p =0; p < n; p++)
               {
-                printf("pid[]: %d\n",pids[p] );
+                // printf("pid[]: %d\n",pids[p] );
                 pid_t player_pid;
                 if(p != i)
                 {
                   int t = 1;
                   for(j = 0; j < n; j++)
                   {
-                    printf("wrong_player[j]:   %d\n",wrong_player[j] );
+                    // printf("wrong_player[j]:   %d\n",wrong_player[j] );
                     if(wrong_player[j] == p)
                       t = 0;
                   }
@@ -279,8 +324,8 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
                   kill(pids[p], SIGKILL);
                   int status;
                   player_pid = Waitpid(pids[p], &status, 0);
-                  printf("player done pid1:  %d\n", player_pid);
-                  printf("%d\n",WEXITSTATUS(status) );
+                  // printf("player done pid1:  %d\n", player_pid);
+                  // printf("%d\n",WEXITSTATUS(status) );
                 }
                 else
                 { // winner
@@ -288,7 +333,7 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
 
                   int status = 0;
                    player_pid = Waitpid(pids[p], &status, 0);
-                   printf("player done pid2:  %d\n", player_pid);
+                   // printf("player done pid2:  %d\n", player_pid);
 
 
 
@@ -316,7 +361,7 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
             if(strcmp(buffer, "wrong!\n")==0) // if someone goes worng
             {
               current_wrong++;
-              printf("wrong wrong wrong wrong  wrong wrong wrong wrong wrong wrong wrong\n" );
+              // printf("wrong wrong wrong wrong  wrong wrong wrong wrong wrong wrong wrong\n" );
 
               kill(pids[i], SIGKILL);
               int status;
@@ -340,6 +385,31 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
 
               if(player_n == n ) // everyone went wrong
               {
+                int i;
+                close(gameMakerOut[WRITE]);
+                close(gameMakerIn[READ]);
+                int statusg;
+                pid_t game_p = Waitpid(pid, &statusg, 0);
+
+
+
+                for(i= 0; i < n; i++)
+                {
+                  close(pl_pipeOut[i][READ]);
+                  close(pl_pipeIn[i][WRITE]);
+                  close(pl_pipeOut[i][WRITE]);
+                  close(pl_pipeIn[i][READ]);
+
+                  kill(pids[i], SIGKILL);
+                  int statusp;
+                  pid_t player_pid = Waitpid(pids[i], &statusp, 0);
+                }
+
+
+                // wait everyone and close all the pipe
+
+
+
                 // printf("%s\n","alksdfhaksdhfk;ahsdf" );
                 wrong_counter++;
                 done_flag++;
@@ -350,7 +420,7 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
             if(strcmp(buffer, "winner\n")!=0 && !current_wrong )
             {
               Rio_writen(pl_pipeOut[i][WRITE], buffer, 7 ); // send game_maker message to player // send winner
-              
+
               int nnn;
               // if(current_round == 7)
               // {
@@ -372,7 +442,7 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
 
               buffer2[nnn] = 0;
               // sio_puts(buffer2);
-              printf("player message: %s",buffer2 );
+              // printf("player message: %s",buffer2 );
               Rio_writen(gameMakerOut[WRITE], buffer2, 7 ) ; // send player message to game maker
             }
 
@@ -381,6 +451,7 @@ static void run_tournament(int seed, int rounds, int n, char **progs)
         }
       } // end of 1 round
     } // end of else
+    Sigprocmask(SIG_UNBLOCK, &sigs, NULL);
   }// end of all rounds
 
   // print out the result
@@ -423,6 +494,7 @@ void start_player(pid_t pids[], int pl_pipeOut[][2],int pl_pipeIn[][2], int n,  
       close(pl_pipeIn[i][WRITE]);
 
       char *player_argv[] = {progs[i], NULL };
+      Setpgid(0, 0);
       Execve(progs[i], player_argv, environ);
 
       // call player program
