@@ -44,8 +44,6 @@ void ctl_c_handler(int sigchld) {
     sio_puts(" ");
     sio_putl(game_result[f][2]);
     sio_puts("\n");
-
-
   }
     _exit(0);
 }
