@@ -79,6 +79,7 @@ int main(int argc, char **argv)
 
 static void run_tournament(int seed, int rounds, int n, char **progs)
 {
+  Signal(SIGPIPE, SIG_IGN);
   play_nn = n ;
   pid_t pids[n];
   int wrong_player[n];
