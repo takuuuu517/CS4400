@@ -33,14 +33,24 @@ void *first_bp;
 void mm_init(void *heap, size_t heap_size)
 {
   void *bp;
-
   bp = heap + sizeof(block_header);
+  first_bp = bp;
 
-  GET_SIZE(HDRP(bp)) = heap_size;
+  GET_SIZE(HDRP(bp)) = heap_size - sizeof(block_footer);
   GET_ALLOC(HDRP(bp)) = 0;
 
-  first_bp = bp;
   mm_malloc(0); /* never freed */
+
+  first_bp = NEXT_BLKP(bp);
+
+  GET_SIZE(HDRP(NEXT_BLKP(first_bp))) = 0;
+  GET_ALLOC(HDRP(NEXT_BLKP(first_bp))) = 1;
+
+  // printf("first_bp: %lu\n", GET_SIZE(HDRP((first_bp))));
+  // printf("first_bp: %d\n", GET_ALLOC(HDRP((first_bp))));
+  //
+  // printf("last: %lu\n", GET_SIZE(HDRP((NEXT_BLKP(first_bp)))));
+  // printf("last: %d\n", GET_ALLOC(HDRP(NEXT_BLKP(first_bp))));
 }
 
 void set_allocated(void *bp, size_t size) {
@@ -60,16 +70,24 @@ void *mm_malloc(size_t size)
 {
   int new_size = ALIGN(size + OVERHEAD);
   void *bp = first_bp;
+
   while (GET_SIZE(HDRP(bp)) != 0) {
+    // printf("GET_SIZE(HDRP(bp)):  %lu\n", GET_SIZE(HDRP(bp)) );
+    // printf("new_size:   %d\n", new_size );
+
+
     if (!GET_ALLOC(HDRP(bp)) && (GET_SIZE(HDRP(bp)) >= new_size)) {
       set_allocated(bp, new_size);
       return bp;
     }
+    // printf("%s\n","a" );
     bp = NEXT_BLKP(bp);
+    // printf("%s\n","b" );
+
   }
   // extend(new_size);
-  set_allocated(bp, new_size);
-  return bp;
+  // set_allocated(bp, new_size);
+  return NULL;
 }
 
 void mm_free(void *bp)

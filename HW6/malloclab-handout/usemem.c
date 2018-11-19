@@ -370,9 +370,11 @@ void alloc_excessive(int n, int s, int iters, int compact)
   init_heap(n, s, n*s, compact);
   p = malloc(p_size * sizeof(void*));
 
+
   for (j = 0; j < iters; j++) {
     /* Allocate objects until failure */
     for (i = 0; 1; i++) {
+
       if (i >= p_size) {
         void *new_p;
         size_t new_p_size = 2 * p_size;
