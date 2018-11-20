@@ -6,11 +6,18 @@
 #define CHUNK_SIZE (1 << 14)
 #define CHUNK_ALIGN(size) (((size)+(CHUNK_SIZE-1)) & ~(CHUNK_SIZE-1))
 
+// #define OVERHEAD (sizeof(block_header)+sizeof(block_footer))
 #define OVERHEAD (sizeof(block_header)+sizeof(block_footer))
 #define HDRP(bp) ((char *)(bp) - sizeof(block_header))
 
-#define GET_SIZE(p)  ((block_header *)(p))->size
-#define GET_ALLOC(p) ((block_header *)(p))->allocated
+// #define GET_SIZE(p)  ((block_header *)(p))->size
+// #define GET_ALLOC(p) ((block_header *)(p))->allocated
+
+#define GET(p) (*(size_t *)(p))
+#define GET_ALLOC(p) (GET(p) & 0x1)
+#define GET_SIZE(p) (GET(p) & ~0xF)
+#define PUT(p, val) (*(size_t *)(p) = (val))
+#define PACK(size, alloc) ((size) | (alloc))
 
 #define NEXT_BLKP(bp) ((char *)(bp) + GET_SIZE(HDRP(bp)))
 #define PREV_BLKP(bp) ((char *)(bp)-GET_SIZE((char *)(bp)-OVERHEAD))
@@ -18,33 +25,52 @@
 
 void *coalesce(void *bp);
 
-typedef struct {
-  size_t size;
-  char   allocated;
-} block_header;
+typedef size_t block_header;
+typedef size_t block_footer;
 
-typedef struct {
- size_t size;
- int filler;
-} block_footer;
+// typedef struct {
+//   size_t size;
+//   char   allocated;
+// } block_header;
+//
+// typedef struct {
+//  size_t size;
+//  int filler;
+// } block_footer;
 
 void *first_bp;
 
 void mm_init(void *heap, size_t heap_size)
 {
-  void *bp;
-  bp = heap + sizeof(block_header);
-  first_bp = bp;
+  // printf("int:   %d\n",sizeof(int) );
+  // printf("size_t:   %d\n",sizeof(size_t) );
+  //
+  //
+  // printf("OVERHEAD:   %d\n", OVERHEAD);
+  // // printf("OVERHEAD:   %d\n", sizeof(char));
+  // printf("OVERHEAD:   %d\n", sizeof(block_header));
 
-  GET_SIZE(HDRP(bp)) = heap_size - sizeof(block_footer);
-  GET_ALLOC(HDRP(bp)) = 0;
+  void *bp;
+  bp = heap + sizeof(block_header)+8;
+  first_bp = bp;
+  // printf("%p\n", first_bp);
+
+
+
+  PUT(HDRP(bp), PACK(heap_size - sizeof(block_footer), 0));
+
+  // GET_SIZE(HDRP(bp)) = heap_size - sizeof(block_footer);
+  // GET_ALLOC(HDRP(bp)) = 0;
 
   mm_malloc(0); /* never freed */
 
   first_bp = NEXT_BLKP(bp);
 
-  GET_SIZE(HDRP(NEXT_BLKP(first_bp))) = 0;
-  GET_ALLOC(HDRP(NEXT_BLKP(first_bp))) = 1;
+  // printf("%p\n", first_bp);
+
+  PUT(HDRP(NEXT_BLKP(first_bp)), PACK(0, 0));
+  // GET_SIZE(HDRP(NEXT_BLKP(first_bp))) = 0;
+  // GET_ALLOC(HDRP(NEXT_BLKP(first_bp))) = 1;
 
   // printf("first_bp: %lu\n", GET_SIZE(HDRP((first_bp))));
   // printf("first_bp: %d\n", GET_ALLOC(HDRP((first_bp))));
@@ -56,14 +82,22 @@ void mm_init(void *heap, size_t heap_size)
 void set_allocated(void *bp, size_t size) {
   size_t extra_size = GET_SIZE(HDRP(bp)) - size;
   if (extra_size > ALIGN(1 + OVERHEAD)) {
-    GET_SIZE(HDRP(bp)) = size;
-    GET_SIZE(FTRP(bp)) = size;
-    GET_SIZE(HDRP(NEXT_BLKP(bp))) = extra_size;
-    GET_SIZE(FTRP(NEXT_BLKP(bp))) = extra_size;
 
-    GET_ALLOC(HDRP(NEXT_BLKP(bp))) = 0;
+    // GET_SIZE(HDRP(bp)) = size;
+    // GET_SIZE(FTRP(bp)) = size;
+    PUT(HDRP(bp), PACK(size, 1));
+    PUT(FTRP(bp), PACK(size, 1));
+
+
+    // GET_SIZE(HDRP(NEXT_BLKP(bp))) = extra_size;
+    // GET_SIZE(FTRP(NEXT_BLKP(bp))) = extra_size;
+    PUT(HDRP(NEXT_BLKP(bp)), PACK(extra_size, 0));
+    PUT(FTRP(NEXT_BLKP(bp)), PACK(extra_size, 0));
+
+    // GET_ALLOC(HDRP(NEXT_BLKP(bp))) = 0;
   }
-  GET_ALLOC(HDRP(bp)) = 1;
+  PUT(HDRP(bp), PACK(GET_SIZE(HDRP(bp)), 1));
+  // GET_ALLOC(HDRP(bp)) = 1;
 }
 
 void *mm_malloc(size_t size)
@@ -92,7 +126,10 @@ void *mm_malloc(size_t size)
 
 void mm_free(void *bp)
 {
-  GET_ALLOC(HDRP(bp)) = 0;
+
+
+  // GET_ALLOC(HDRP(bp)) = 0;
+  PUT(HDRP(bp), PACK(GET_SIZE(HDRP(bp)), 0));
   coalesce(bp);
 }
 
@@ -107,20 +144,28 @@ void *coalesce(void *bp) {
   }
   else if (prev_alloc && !next_alloc) { /* Case 2  MFF*/
     size += GET_SIZE(HDRP(NEXT_BLKP(bp)));
-    GET_SIZE(HDRP(bp)) = size;
-    GET_SIZE(FTRP(bp)) = size;
+    PUT(HDRP(bp), PACK(size, 0));
+    PUT(FTRP(bp), PACK(size, 0));
+
+    // GET_SIZE(HDRP(bp)) = size;
+    // GET_SIZE(FTRP(bp)) = size;
   }
   else if (!prev_alloc && next_alloc) { /* Case 3 FFM*/
     size += GET_SIZE(HDRP(PREV_BLKP(bp)));
-    GET_SIZE(FTRP(bp)) = size;
-    GET_SIZE(HDRP(PREV_BLKP(bp))) = size;
+    PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+    PUT(FTRP(bp), PACK(size, 0));
+    // GET_SIZE(FTRP(bp)) = size;
+    // GET_SIZE(HDRP(PREV_BLKP(bp))) = size;
     bp = PREV_BLKP(bp);
   }
   else { /* Case 4  FFF*/
     size += (GET_SIZE(HDRP(PREV_BLKP(bp)))
     + GET_SIZE(HDRP(NEXT_BLKP(bp))));
-    GET_SIZE(HDRP(PREV_BLKP(bp))) = size;
-    GET_SIZE(FTRP(NEXT_BLKP(bp))) = size;
+
+    PUT(HDRP(PREV_BLKP(bp)), PACK(size, 0));
+    PUT(FTRP(NEXT_BLKP(bp)), PACK(size, 0));
+    // GET_SIZE(HDRP(PREV_BLKP(bp))) = size;
+    // GET_SIZE(FTRP(NEXT_BLKP(bp))) = size;
     bp = PREV_BLKP(bp);
   }
 
