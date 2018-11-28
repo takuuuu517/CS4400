@@ -1,5 +1,11 @@
 #include "mm.h"
 
+/*
+ * CS4400
+ * HW6
+ * Author: Taku Sakikawa
+ */
+
 #define ALIGNMENT 16
 #define ALIGN(size) (((size) + (ALIGNMENT-1)) & ~(ALIGNMENT-1))
 
