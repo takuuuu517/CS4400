@@ -3,7 +3,7 @@
  *            places.
  *
  * Based on:
- *  tiny.c - A simple, iterative HTTP/1.0 Web server that uses the 
+ *  tiny.c - A simple, iterative HTTP/1.0 Web server that uses the
  *      GET method to serve static and dynamic content.
  *   Tiny Web server
  *   Dave O'Hallaron
@@ -16,13 +16,31 @@
 static void doit(int fd);
 static dictionary_t *read_requesthdrs(rio_t *rp);
 static void read_postquery(rio_t *rp, dictionary_t *headers, dictionary_t *d);
-static void clienterror(int fd, char *cause, char *errnum, 
+static void clienterror(int fd, char *cause, char *errnum,
                         char *shortmsg, char *longmsg);
 static void print_stringdictionary(dictionary_t *d);
 static void serve_request(int fd, dictionary_t *query);
 
-int main(int argc, char **argv) 
+
+static dictionary_t *people;
+static dictionary_t *places;
+static void serve_request_counts(int fd, dictionary_t *query);
+static void serve_request_reset(int fd, dictionary_t *query);
+static void serve_request_people(int fd, dictionary_t *query, char *uri);
+static void serve_request_place(int fd, dictionary_t *query);
+static void serve_request_pin(int fd, dictionary_t *query);
+static void serve_request_unpin(int fd, dictionary_t *query);
+static void serve_request_copy(int fd, dictionary_t *query);
+
+void *doit_th(void *connfdp);
+
+
+
+int main(int argc, char **argv)
 {
+  people = make_dictionary(COMPARE_CASE_SENS,  NULL); // people dictionary (person -> person dictionary)
+  places = make_dictionary(COMPARE_CASE_SENS,  NULL); // place dictionary  (place -> place dictionary)
+
   int listenfd, connfd;
   char hostname[MAXLINE], port[MAXLINE];
   socklen_t clientlen;
@@ -48,19 +66,36 @@ int main(int argc, char **argv)
     clientlen = sizeof(clientaddr);
     connfd = Accept(listenfd, (SA *)&clientaddr, &clientlen);
     if (connfd >= 0) {
-      Getnameinfo((SA *) &clientaddr, clientlen, hostname, MAXLINE, 
+      Getnameinfo((SA *) &clientaddr, clientlen, hostname, MAXLINE,
                   port, MAXLINE, 0);
       printf("Accepted connection from (%s, %s)\n", hostname, port);
-      doit(connfd);
-      Close(connfd);
+      // doit(connfd);
+
+      int *connfdp;
+      pthread_t th;
+      connfdp = malloc(sizeof(int));
+      *connfdp = connfd;
+      Pthread_create(&th, NULL, doit_th, connfdp);            //
+      Pthread_detach(th);
+      // Close(connfd);
     }
   }
 }
 
+void *doit_th(void *connfdp) // wrapper for doit method
+{
+  int connfd = *(int *)connfdp;
+  free(connfdp); //connfdp is not needed anymore
+  doit(connfd);
+  Close(connfd);
+  return NULL;
+}
+
+
 /*
  * doit - handle one HTTP request/response transaction
  */
-void doit(int fd) 
+void doit(int fd)
 {
   char buf[MAXLINE], *method, *uri, *version;
   rio_t rio;
@@ -71,7 +106,7 @@ void doit(int fd)
   if (Rio_readlineb(&rio, buf, MAXLINE) <= 0)
     return;
   printf("%s", buf);
-  
+
   if (!parse_request_line(buf, &method, &uri, &version)) {
     clienterror(fd, method, "400", "Bad Request",
                 "Redpin did not recognize the request");
@@ -94,16 +129,50 @@ void doit(int fd)
         read_postquery(&rio, headers, query);
 
       /* For debugging, print the dictionary */
+      printf("hello %s\n",uri );
       print_stringdictionary(query);
+      printf("hello %s\n",uri );
+
+      if (starts_with("/counts", uri)){
+        printf("counts\n");
+        serve_request_counts(fd, query);
+
+      }else if(starts_with("/reset", uri)){
+        printf("reset\n");
+        serve_request_reset(fd, query);
+
+      }else if(starts_with("/people", uri)){
+        serve_request_people(fd, query, uri);
+        printf("people\n");
+
+      }else if(starts_with("/place", uri)){
+        serve_request_place(fd, query);
+        printf("place\n");
+
+      }else if(starts_with("/pin", uri)){
+        serve_request_pin(fd, query);
+        printf("pin\n");
+
+      }else if(starts_with("/unpin", uri)){
+        serve_request_unpin(fd, query);
+        printf("unpin\n");
+
+      }else if(starts_with("/copy", uri)){
+        serve_request_copy(fd, query);
+        printf("copy\n");
+      }else
+        printf("This URL is not valid\n" );
+
 
       /* You'll want to handle different queries here,
          but the intial implementation always returns
          nothing: */
-      serve_request(fd, query);
+      // serve_request(fd, query);
 
       /* Clean up */
       dictionary_free(query);
       dictionary_free(headers);
+
     }
 
     /* Clean up status line */
@@ -116,7 +185,7 @@ void doit(int fd)
 /*
  * read_requesthdrs - read HTTP request headers
  */
-dictionary_t *read_requesthdrs(rio_t *rp) 
+dictionary_t *read_requesthdrs(rio_t *rp)
 {
   char buf[MAXLINE];
   dictionary_t *d = make_dictionary(COMPARE_CASE_INSENS, free);
@@ -127,7 +196,7 @@ dictionary_t *read_requesthdrs(rio_t *rp)
     parse_header_line(buf, d);
     Rio_readlineb(rp, buf, MAXLINE);
   }
-  
+
   return d;
 }
 
@@ -135,12 +204,12 @@ void read_postquery(rio_t *rp, dictionary_t *headers, dictionary_t *dest)
 {
   char *len_str, *type, *buffer;
   int len;
-  
+
   len_str = dictionary_get(headers, "Content-Length");
   len = (len_str ? atoi(len_str) : 0);
 
   type = dictionary_get(headers, "Content-Type");
-  
+
   buffer = malloc(len+1);
   Rio_readnb(rp, buffer, len);
   buffer[len] = 0;
@@ -154,7 +223,7 @@ void read_postquery(rio_t *rp, dictionary_t *headers, dictionary_t *dest)
 
 static char *ok_header(size_t len, const char *content_type) {
   char *len_str, *header;
-  
+
   header = append_strings("HTTP/1.0 200 OK\r\n",
                           "Server: Redpin Web Server\r\n",
                           "Connection: close\r\n",
@@ -173,9 +242,7 @@ static void serve_request(int fd, dictionary_t *query)
 {
   size_t len;
   char *body, *header;
-
   body = strdup("alice\nbob\n");
-
   len = strlen(body);
 
   /* Send response headers to client */
@@ -195,8 +262,8 @@ static void serve_request(int fd, dictionary_t *query)
 /*
  * clienterror - returns an error message to the client
  */
-void clienterror(int fd, char *cause, char *errnum, 
-		 char *shortmsg, char *longmsg) 
+void clienterror(int fd, char *cause, char *errnum,
+		 char *shortmsg, char *longmsg)
 {
   size_t len;
   char *header, *body, *len_str;
@@ -215,7 +282,7 @@ void clienterror(int fd, char *cause, char *errnum,
                           "Content-length: ", len_str = to_string(len), "\r\n\r\n",
                           NULL);
   free(len_str);
-  
+
   Rio_writen(fd, header, strlen(header));
   Rio_writen(fd, body, len);
 
@@ -229,7 +296,7 @@ static void print_stringdictionary(dictionary_t *d)
   const char **keys;
 
   keys = dictionary_keys(d);
-  
+
   for (i = 0; keys[i] != NULL; i++) {
     printf("%s=%s\n",
            keys[i],
@@ -238,4 +305,545 @@ static void print_stringdictionary(dictionary_t *d)
   printf("\n");
 
   free(keys);
+}
+
+
+static void serve_request_counts(int fd, dictionary_t *query)
+{
+  size_t len;
+  char *body, *header;
+
+  int poeple_num = dictionary_count(people);
+  int places_num = dictionary_count(places);
+  char* result = append_strings(to_string(poeple_num),"\n",to_string(places_num),"\n");
+  body = strdup(result);
+  len = strlen(body);
+
+  /* Send response headers to client */
+  header = ok_header(len, "text/plain; charset=utf-8");
+  Rio_writen(fd, header, strlen(header));
+  printf("Response headers:\n");
+  printf("%s", header);
+
+  free(header);
+
+
+  /* Send response body to client */
+  Rio_writen(fd, body, len);
+
+  free(body);
+}
+
+static void serve_request_reset(int fd, dictionary_t *query)
+{
+  size_t len;
+  char *body, *header;
+
+  // dictionary_free(people);
+  // dictionary_free(places);
+
+  int poeple_num = dictionary_count(people);
+  int places_num = dictionary_count(places);
+  char* result;
+
+  if(!(places_num ==0  && poeple_num ==0))
+  {
+    printf("poeple_numpoeple_numpoeple_numpoeple_num %d\n",poeple_num );
+
+    const char** people_key = dictionary_keys(people);
+    const char** place_key = dictionary_keys(places);
+    printf("%s\n",place_key[0] );
+
+
+    int i, j ;
+    for(i = 0; i < poeple_num; i++)
+    {
+      printf("%s\n","ashfkashkfhasfkds" );
+      printf("%s\n",people_key[i] );
+      // dictionary_free(dictionary_get(people,people_key[i]));
+      dictionary_remove(people, people_key[i]);
+    }
+    int places_num = dictionary_count(places);
+    printf("places_numplaces_numplaces_numplaces_num %d\n",places_num );
+
+    for(j = 0; j < places_num; j++)
+    {
+      printf("%s\n","ashfkashkfhasfkds" );
+      printf("%s\n",place_key[j] );
+      // dictionary_free(dictionary_get(places,place_key[i]));
+      dictionary_remove(places, place_key[j]);
+    }
+  }
+
+  result = append_strings(to_string(dictionary_count(people)),"\n",to_string(dictionary_count(places)),"\n",NULL);
+
+  body = strdup(result);
+
+  len = strlen(body);
+
+  /* Send response headers to client */
+  header = ok_header(len, "text/plain; charset=utf-8");
+  Rio_writen(fd, header, strlen(header));
+  printf("Response headers:\n");
+  printf("%s", header);
+
+  free(header);
+
+
+  /* Send response body to client */
+  Rio_writen(fd, body, len);
+
+  free(body);
+}
+
+static void serve_request_people(int fd, dictionary_t *query, char* uri)
+{
+  int i;
+
+  size_t len;
+  char *body, *header;
+
+
+  // implementation
+  char *place_s = dictionary_get(query, "place"); // NAME OF THE PLACE IF ANY
+
+
+  char * result = "";
+  if(place_s == NULL) // WHEN PLACE IS NOT SPECIFIED -> return all the people
+  {
+
+
+
+    // printf("testtesttesttesttesttesttesttest\n" );
+    // printf("%s\n",keys[0]);
+    // printf("%s\n",keys[1]);
+    // printf("testtesttesttesttesttesttesttest\n" );
+    printf("place not specitied\n" );
+    printf("dictionary_count(people)   %d\n", dictionary_count(people) );
+
+
+    if(dictionary_count(people) == 0 ) // there is not people
+      result  = "\n";
+    else
+    {
+      const char** keys = dictionary_keys(people);
+      for(i = 0 ; i < dictionary_count(people) ; i++ )
+      {
+        result = append_strings(result, keys[i],"\n", NULL);
+      }
+    }
+    printf("resultresultresultresult %s\n", result);
+  }
+  else // WHEN PLACE IS SPECIFIED (place\nplace)
+  {
+    if(dictionary_has_key(places, place_s))
+    {
+      dictionary_t *place_people = dictionary_get(places, place_s);
+      const char** keys = dictionary_keys(place_people);
+      if(dictionary_count(place_people) == 0 ) // there is not people
+        result  = "\n";
+      else
+      {
+        for(i = 0 ; i < dictionary_count(place_people) ; i++ )
+          result = append_strings(result, keys[i],"\n", NULL);
+      }
+    }
+    else
+      result = "\n";
+  }
+
+  body = strdup(result);
+  len = strlen(body);
+  // implementation
+
+
+  /* Send response headers to client */
+  header = ok_header(len, "text/plain; charset=utf-8");
+  Rio_writen(fd, header, strlen(header));
+  printf("Response headers:\n");
+  printf("%s", header);
+
+  free(header);
+
+
+  /* Send response body to client */
+  Rio_writen(fd, body, len);
+
+  free(body);
+}
+
+static void serve_request_place(int fd, dictionary_t *query)
+{
+  int i;
+
+  size_t len;
+  char *body, *header;
+
+
+  // implementation
+  char *people_s = dictionary_get(query, "person"); // NAME OF THE PLACE IF ANY
+  char * result = "";
+  if(people_s== NULL) // WHEN PLACE IS NOT SPECIFIED
+  {
+    const char** keys = dictionary_keys(places);
+
+    if(dictionary_count(places) == 0 ) // there is not people
+      result  = "\n";
+    else
+    {
+      printf("aksflajslflas:   %d\n",dictionary_count(places) );
+      printf("keys[0]: %s\n", keys[0]);
+      printf("keys[1]: %s\n", keys[1]);
+      for(i = 0 ; i < dictionary_count(places) ; i++ )
+        result = append_strings(result, keys[i],"\n", NULL);
+    }
+  }
+  else // WHEN PLACE IS SPECIFIED (people)
+  {
+    printf("PLACE IS SPECIFIED PLACE IS SPECIFIED PLACE IS SPECIFIED PLACE IS SPECIFIED \n" );
+    if(dictionary_has_key(people, people_s))
+    {
+
+      printf("yestestes\n" );
+
+      dictionary_t *people_place = dictionary_get(people, people_s);
+      const char** keys = dictionary_keys(people_place);
+
+
+      if(dictionary_count(people_place) == 0 ) // there is not people
+        result  = "\n";
+      else
+      {
+        for(i = 0 ; i < dictionary_count(people_place) ; i++ )
+          result = append_strings(result, keys[i],"\n", NULL);
+      }
+    }
+    else
+      result = "\n";
+  }
+
+  body = strdup(result);
+  len = strlen(body);
+  // implementation
+
+
+  /* Send response headers to client */
+  header = ok_header(len, "text/plain; charset=utf-8");
+  Rio_writen(fd, header, strlen(header));
+  printf("Response headers:\n");
+  printf("%s", header);
+
+  free(header);
+
+
+  /* Send response body to client */
+  Rio_writen(fd, body, len);
+
+  free(body);
+}
+
+static void serve_request_pin(int fd, dictionary_t *query)
+{
+  size_t len;
+  char *body, *header;
+
+  // implementation
+  char *people_s = dictionary_get(query, "people"); // NAME OF THE PLACE IF ANY
+  char *place_s = dictionary_get(query, "places"); // NAME OF THE PLACE IF ANY
+
+  // create arrays that store people to be pined and the places that people have visited.
+  char** people_arr = split_string(people_s, '\n');
+  char** places_arr = split_string(place_s, '\n');
+
+  char** people_p; // each person
+  char** place_p;
+  for(people_p = people_arr; *people_p; people_p++)  // iterate each person and pin them.
+  {
+
+    if(!dictionary_has_key(people, *people_p)) // the person already exist in the dictionary
+    {
+      dictionary_t *new_person = make_dictionary(COMPARE_CASE_SENS,  free); // people dictionary (person -> person dictionary)
+      dictionary_set(people, *people_p, new_person);
+    }
+    dictionary_t *people_place = dictionary_get(people, *people_p);
+
+    for(place_p = places_arr; *place_p; place_p++)  // iterate each place and pin them.
+    {
+      if(!dictionary_has_key(people_place, *place_p))
+      {
+        dictionary_set(people_place, *place_p, NULL);
+
+        // need to make sure that the place exist. if not add to the dictionary
+        if(!dictionary_has_key(places,*place_p))
+        {
+          // add the person.
+          dictionary_t *new_place = make_dictionary(COMPARE_CASE_SENS,  free); // people dictionary (person -> person dictionary)
+          dictionary_set(places,*place_p , new_place);
+        }
+        dictionary_t *place_people = dictionary_get(places, *place_p);
+        dictionary_set(place_people,*people_p , NULL);
+
+      }
+
+    }
+  }
+  // to get the number of the people and the places //
+  int poeple_num = dictionary_count(people);
+  int places_num = dictionary_count(places);
+  char* result = append_strings(to_string(poeple_num),"\n",to_string(places_num),"\n");
+  body = strdup(result);
+  len = strlen(body);
+  // to get the number of the people and the places //
+
+  // implementation
+
+
+  /* Send response headers to client */
+  header = ok_header(len, "text/plain; charset=utf-8");
+  Rio_writen(fd, header, strlen(header));
+  printf("Response headers:\n");
+  printf("%s", header);
+
+  free(header);
+
+
+  /* Send response body to client */
+  Rio_writen(fd, body, len);
+
+  free(body);
+
+}
+
+static void serve_request_unpin(int fd, dictionary_t *query)
+{
+  size_t len;
+  char *body, *header;
+
+  // implementation
+  char *people_s = dictionary_get(query, "people"); // NAME OF THE PLACE IF ANY
+  char *place_s = dictionary_get(query, "places"); // NAME OF THE PLACE IF ANY
+
+  printf("people_s:  %s\n",people_s );
+  printf("place_s:  %s\n", place_s);
+
+  // create arrays that store people to be unpined and the places.
+  char** people_arr = split_string(people_s, '\n');
+  char** places_arr = split_string(place_s, '\n');
+
+  char** people_p; // each person
+  char** place_p;
+  for(people_p = people_arr; *people_p; people_p++)  // iterate each person and pin them.
+  {
+
+    dictionary_t *people_place;
+    if(!dictionary_has_key(people, *people_p)) // if the person does not exist in the dictionary -> skip the person
+      continue;
+    else
+      people_place = dictionary_get(people, *people_p);
+
+    for(place_p = places_arr; *place_p; place_p++)  // iterate each place and pin them.
+    {
+      if(!dictionary_has_key(people_place, *place_p)) // if the person has not visited the place -> nothinkg to do
+      {
+        continue;
+      }
+      else // if the person has visited the place -> remove the place
+      {
+        printf("remove please remove please remove please remove please \n");
+        printf("%s\n", *place_p);
+        printf("%s\n", *people_p);
+
+        dictionary_remove(people_place, *place_p);
+
+        printf("%d\n", dictionary_count(people_place));
+
+        dictionary_t *place_people = dictionary_get(places, *place_p);
+        dictionary_remove(place_people, *people_p);
+
+        if(dictionary_count(people_place)== 0) // if the person lost every place
+        {
+          // dictionary_free(people_place);
+          dictionary_remove(people, *people_p);
+        }
+        if(dictionary_count(place_people)== 0)
+        {
+          dictionary_remove(places, *place_p);
+        }
+      }
+    }
+  }
+  // to get the number of the people and the places //
+  int poeple_num = dictionary_count(people);
+  int places_num = dictionary_count(places);
+  char* result = append_strings(to_string(poeple_num),"\n",to_string(places_num),"\n");
+  body = strdup(result);
+  len = strlen(body);
+  // to get the number of the people and the places //
+
+  // implementation
+
+  /* Send response headers to client */
+  header = ok_header(len, "text/plain; charset=utf-8");
+  Rio_writen(fd, header, strlen(header));
+  printf("Response headers:\n");
+  printf("%s", header);
+  free(header);
+
+  /* Send response body to client */
+  Rio_writen(fd, body, len);
+
+  free(body);
+}
+
+
+static void serve_request_copy(int fd, dictionary_t *query)
+{
+  size_t len;
+  char *body, *header;
+
+  // implementation
+  char* host = dictionary_get(query,"host");
+  char *port = dictionary_get(query,"port");
+
+  printf("hosthost  %s\n",host);
+  printf("portport  %s\n",port);
+
+
+  char *person = dictionary_get(query,"person");
+  char *place = dictionary_get(query,"place");
+  char *as = dictionary_get(query,"as");
+
+
+  printf("as as as as as %s\n",as  );
+  printf("place place place place place  %s\n",place   );
+  printf("person person person person person person %s\n", person);
+
+  char *request;
+  // there are two cases: person or place
+  if(place == NULL) // if person is specified
+  {//GET /copy?host=localhost&port=8090&person=carol&as=alice HTTP/1.1
+    request = append_strings("GET /places?person=",person," HTTP/1.1\r\n\r\n",NULL);
+
+
+
+    int cfd = Open_clientfd(host, port);
+
+    printf("cfdcfdcfdcfdcfdcfd　　　%d\n",cfd  );
+
+    printf("requestrequestrequestrequestrequest %s\n",request );
+    Rio_writen(cfd, request, strlen(request));
+
+    printf("%s\n","write" );
+
+    char buf[MAXLINE], *version, *status, * desc_p;
+
+    rio_t r;
+    dictionary_t *headers;
+
+    Rio_readinitb(&r, cfd);
+
+    if (Rio_readlineb(&r, buf, MAXLINE) <= 0)
+    {
+      printf("%s\n","ERROR" );
+      return ;
+    }
+    printf("bufffff %s\n",buf);
+
+
+    if(!(parse_status_line(buf, &version, &status, &desc_p)) || strcmp(status, "200")!=0)
+    {
+      printf("%s\n","ERROR2" );
+    }
+
+    printf("statusstatusstatusstatusstatusstatusstatusstatus %s\n", status);
+    headers = read_requesthdrs(&r);
+
+    printf("%s\n","takutakutaku1takutakutaku1takutakutaku1takutakutaku1" );
+    print_stringdictionary(headers);
+    printf("%s\n","takutakutaku2takutakutaku2takutakutaku2takutakutaku2" );
+
+    char* len_str = dictionary_get(headers, "Content-Length");
+    int len = (len_str ? atoi(len_str) : 0);
+
+    char* buffer = malloc(len+1);
+    Rio_readnb(&r, buffer, len);
+    buffer[len] = 0; // buffer stores the place (place\nplace]n.....)
+
+    printf("bufferbufferbufferbufferbufferbuffer  %s\n",buffer );
+
+
+
+    if(strcmp(buffer, "\n") == 0 )// if empty
+    {
+      printf("%s\n","emptyemptyemptyemptyemptyemptyemptyemptyemptyempty" );
+    }
+    else // there are places
+    {
+      char** copy_arr;
+      copy_arr  = split_string(buffer, '\n');
+
+      char** copy_p;
+
+      if(!dictionary_has_key(people, as)) // the person already exist in the dictionary
+      {
+        dictionary_t *new_person = make_dictionary(COMPARE_CASE_SENS,  free); // people dictionary (person -> person dictionary)
+        dictionary_set(people, as, new_person);
+      }
+      dictionary_t *people_place = dictionary_get(people, as);
+
+      for(copy_p = copy_arr; *copy_p; copy_p++)  // iterate each copy item
+      {
+        if(!dictionary_has_key(people_place, *copy_p)) // if the item is not in the dictionary
+        {
+          dictionary_set(people_place, *copy_p, NULL);
+
+          // need to make sure that the place exist. if not add to the dictionary
+          if(!dictionary_has_key(places,*copy_p))
+          {
+            // add the person.
+            dictionary_t *new_place = make_dictionary(COMPARE_CASE_SENS,  free); // people dictionary (person -> person dictionary)
+            dictionary_set(places,*copy_p , new_place);
+          }
+          dictionary_t *place_people = dictionary_get(places, *copy_p);
+          dictionary_set(place_people,as , NULL);
+        }
+      }
+      // to get the number of the people and the places //
+      int poeple_num = dictionary_count(people);
+      int places_num = dictionary_count(places);
+      char* result = append_strings(to_string(poeple_num),"\n",to_string(places_num),"\n");
+      body = strdup(result);
+      len = strlen(body);
+      // to get the number of the people and the places //
+
+      //copy == pin
+    }
+
+  }
+  else if (person == NULL)
+  {
+    request = append_strings("/people?place=",place ," HTTP/1.1\n");
+  }
+
+  // implementation
+
+  int poeple_num = dictionary_count(people);
+  int places_num = dictionary_count(places);
+  char* result = append_strings(to_string(poeple_num),"\n",to_string(places_num),"\n");
+  // char* result = append_strings(to_string(0),"\n",to_string(0),"\n");
+  body = strdup(result);
+  len = strlen(body);
+
+  /* Send response headers to client */
+  header = ok_header(len, "text/plain; charset=utf-8");
+  Rio_writen(fd, header, strlen(header));
+  printf("Response headers:\n");
+  printf("%s", header);
+  free(header);
+
+
+  /* Send response body to client */
+  Rio_writen(fd, body, len);
+
+  free(body);
 }
