@@ -38,8 +38,8 @@ static void *doit_th(void *connfdp);
 
 int main(int argc, char **argv)
 {
-  people = make_dictionary(COMPARE_CASE_SENS,  NULL); // people dictionary (person -> person dictionary)
-  places = make_dictionary(COMPARE_CASE_SENS,  NULL); // place dictionary  (place -> place dictionary)
+  people = make_dictionary(COMPARE_CASE_SENS,  (free_proc_t)dictionary_free); // people dictionary (person -> person dictionary)
+  places = make_dictionary(COMPARE_CASE_SENS,   (free_proc_t)dictionary_free); // place dictionary  (place -> place dictionary)
 
   int listenfd, connfd;
   char hostname[MAXLINE], port[MAXLINE];
@@ -530,7 +530,7 @@ static void serve_request_people(int fd, dictionary_t *query, char* uri)
   /* Send response body to client */
   Rio_writen(fd, body, len);
   free(body);
-  free(result);
+  // free(result);
 }
 
 static void serve_request_place(int fd, dictionary_t *query)
@@ -656,7 +656,7 @@ static void serve_request_place(int fd, dictionary_t *query)
   Rio_writen(fd, body, len);
 
   free(body);
-  free(result);
+  // free(result);
   return ;
 
 }
@@ -848,8 +848,8 @@ static void serve_request_unpin(int fd, dictionary_t *query)
           // dictionary_free(people_place);
 
           dictionary_remove(people, *people_p);
-          dictionary_free(place_people);
-          free(place_people);
+          // dictionary_free(place_people);
+          // free(place_people);
 
           // dictiona
           // dictionary_free(dictionary_get(people, *people_p));
@@ -858,8 +858,8 @@ static void serve_request_unpin(int fd, dictionary_t *query)
         {
           // dictionary_free(place_people);
           dictionary_remove(places, *place_p);
-          dictionary_free(place_people);
-          free(place_people);
+          // dictionary_free(place_people);
+          // free(place_people);
 
         }
       }
@@ -879,8 +879,8 @@ static void serve_request_unpin(int fd, dictionary_t *query)
     j++;
   }
 
-  free(people_s);
-  free(place_s);
+  // free(people_s); // いらない
+  // free(place_s); // いらない
   free(people_arr);
   free(places_arr);
 
@@ -1030,7 +1030,7 @@ static void serve_request_copy(int fd, dictionary_t *query)
     {
       dictionary_t *new_person = make_dictionary(COMPARE_CASE_SENS,  free); // people dictionary (person -> person dictionary)
       dictionary_set(people, as, new_person);
-      dictionary_free(new_person);
+      // dictionary_free(new_person);
     }
     dictionary_t *people_place = dictionary_get(people, as);
 
@@ -1046,7 +1046,7 @@ static void serve_request_copy(int fd, dictionary_t *query)
           // add the person.
           dictionary_t *new_place = make_dictionary(COMPARE_CASE_SENS,  free); // people dictionary (person -> person dictionary)
           dictionary_set(places,*copy_p , new_place);
-          dictionary_free(new_place);
+          // dictionary_free(new_place);
         }
         dictionary_t *place_people = dictionary_get(places, *copy_p);
         dictionary_set(place_people,as , NULL);
@@ -1078,7 +1078,7 @@ static void serve_request_copy(int fd, dictionary_t *query)
     {
       dictionary_t *new_place = make_dictionary(COMPARE_CASE_SENS,  free); // people dictionary (person -> person dictionary)
       dictionary_set(places, as, new_place);
-      dictionary_free(new_place);
+      // dictionary_free(new_place);
     }
     dictionary_t *place_people = dictionary_get(places, as);
 
